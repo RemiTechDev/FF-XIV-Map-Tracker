@@ -1,3 +1,10 @@
+<p align="center">
+  <img src="assets/MapTracker.jpeg" alt="FFXIV Map Tracker Banner" width="100%">
+</p>
+
+---
+
+
 🇵🇱 Polski
 FF-XIV-Map-Tracker
 
