@@ -3,162 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
     <title>FFXIV Map Tracker</title>
 
-    <link rel="stylesheet" href="styles.css?v=5">
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<!-- Przycisk powrotu widoczny wyłącznie w trybie Overlay Mode -->
-<button id="exitOverlayBtn" class="btn-exit-overlay hidden">
-    <i class="fas fa-compress"></i> <span data-i18n="exitOverlay">Wyjdź z Overlay Mode</span>
-</button>
 
-<div class="app-container">
-    <!-- PANEL BOCZNY (SIDEBAR) -->
-    <aside class="sidebar">
+<div class="page-background"></div>
+
+<div class="container">
+    <aside class="menu">
         <div class="brand">
-            <div class="brand-header">
-                <div>
-                    <span class="sub-title" data-i18n="journalTitle">DZIENNIK POSZUKIWACZA PRZYGÓD</span>
-                    <h1>FFXIV Map Tracker</h1>
-                </div>
-                <button id="toggleOverlayBtn" class="btn-overlay">
-                    <i class="fas fa-expand"></i> <span data-i18n="overlayBtn">Tryb Overlay</span>
-                </button>
+            <img src="https://img2.finalfantasyxiv.com/c/S3a_823c68e13683a115b4df62bfab74d24b_00_64x64.png" alt="FFXIV" class="logo">
+            <div>
+                <div class="brand-title">FFXIV</div>
+                <div class="brand-subtitle">MAP TRACKER</div>
             </div>
-            <p class="description" data-i18n="appDescription">
-                Śledź mapy, portale, ukończone lochy i zysk w Gil.
-            </p>
         </div>
 
-        <!-- Wybór języka -->
-        <div class="form-group lang-group">
-            <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Wybór języka</label>
-            <select id="languageSelect" class="form-control">
-                <option value="pl">Polski</option>
-                <option value="en" selected>English</option>
-                <option value="fr">Français</option>
+        <div class="menu-section">
+            <label for="language">Wybór języka</label>
+            <select id="language">
+                <option value="PL">PL</option>
+                <option value="ENG">ENG</option>
+                <option value="FR">FR</option>
             </select>
-        </div>
 
-        <!-- Karty Statystyk (Podsumowanie) -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <span class="stat-label" data-i18n="totalMaps">Razem mapy</span>
-                <span id="statTotalMaps" class="stat-value">0 (Portal: 0%)</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label" data-i18n="totalPortals">Razem portale</span>
-                <span id="statTotalPortals" class="stat-value">0</span>
-            </div>
-            <div class="stat-card">
-                <span class="stat-label" data-i18n="completedDungeons">Ukończone lochy</span>
-                <span id="statCompletedDungeons" class="stat-value">0 (Clear: 0%)</span>
-            </div>
-            <div class="stat-card gold">
-                <span class="stat-label" data-i18n="totalGil">Suma Gil</span>
-                <span id="statTotalGil" class="stat-value">0 Gil</span>
-            </div>
-        </div>
+            <label for="calendar">Wybierz datę</label>
+            <input type="date" id="calendar">
 
-        <!-- Formularz wprowadzania danych -->
-        <form id="entryForm" class="entry-form">
-            <div class="form-group">
-                <label for="entryDate" data-i18n="selectDate">Wybierz datę</label>
-                <input type="date" id="entryDate" required class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label for="mapSelect" data-i18n="mapType">Mapa</label>
-                <select id="mapSelect" class="form-control"></select>
-            </div>
+            <label for="map-select">Mapa</label>
+            <select id="map-select"></select>
 
             <div class="form-row">
-                <div class="form-group">
-                    <label for="mapsCount" data-i18n="mapsCount">Liczba map</label>
-                    <input type="number" id="mapsCount" min="0" value="0" class="form-control">
+                <div>
+                    <label for="num-maps">Liczba map</label>
+                    <input type="number" id="num-maps" value="0" min="0">
                 </div>
-                <div class="form-group">
-                    <label for="portalsCount" data-i18n="portalsCount">Liczba portali</label>
-                    <input type="number" id="portalsCount" min="0" value="0" class="form-control">
+                <div>
+                    <label for="num-portals">Liczba portali</label>
+                    <input type="number" id="num-portals" value="0" min="0">
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-group">
-                    <label for="clearsCount" data-i18n="clearsCount">Ukończone lochy (Clears)</label>
-                    <input type="number" id="clearsCount" min="0" value="0" class="form-control">
+                <div>
+                    <label for="num-clears">Clears (Lochy)</label>
+                    <input type="number" id="num-clears" value="0" min="0">
                 </div>
-                <div class="form-group">
-                    <label for="gilEarned" data-i18n="gilEarned">Zarobiony Gil</label>
-                    <input type="number" id="gilEarned" min="0" value="0" class="form-control">
+                <div>
+                    <label for="earned-gil">Zarobiony Gil</label>
+                    <input type="number" id="earned-gil" value="0" min="0">
                 </div>
             </div>
+        </div>
 
-            <div class="button-group">
-                <button type="submit" id="addBtn" class="btn btn-primary" data-i18n="addData">Dodaj dane</button>
-                <button type="button" id="editBtn" class="btn btn-secondary hidden" data-i18n="editData">Zapisz zmiany</button>
-                <button type="button" id="deleteBtn" class="btn btn-danger hidden" data-i18n="deleteData">Usuń wybrane dane</button>
-            </div>
-        </form>
+        <div class="menu-section actions">
+            <button id="add-data" class="primary">Dodaj dane</button>
+            <button id="edit-data">Edytuj dane</button>
+            <button id="delete-data" class="danger">Usuń wybrane dane</button>
+
+            <div class="separator"></div>
+
+            <button id="load-csv">Załaduj CSV</button>
+            <button id="save-csv">Zapisz jako CSV</button>
+            <button id="load-excel">Załaduj Excel</button>
+            <button id="save-excel">Zapisz jako Excel</button>
+        </div>
+
+        <div class="menu-footer">
+            <span>FFXIV Map Tracker</span>
+            <span>For Eorzea ✦</span>
+        </div>
     </aside>
 
-    <!-- GŁÓWNY PANEL Z WYKRESAMI I TABELĄ -->
-    <main class="content-area">
-        <section class="section-container">
-            <div class="section-header">
-                <span class="section-subtitle" data-i18n="statsSubtitle">STATYSTYKI</span>
-                <h2 data-i18n="statsTitle">Przegląd zysków i wskaźników</h2>
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <div class="eyebrow">ADVENTURER'S RECORD</div>
+                <h1 id="main-title">FFXIV Map Tracker</h1>
+                <p class="header-description">Śledź mapy, portale i postęp swoich treasure runs.</p>
+            </div>
+            <div class="crystal">✦</div>
+        </header>
+
+        <section id="summary" class="summary-grid">
+            <div class="stat-card">
+                <div class="stat-icon">◈</div>
+                <div>
+                    <span class="stat-label" id="summary-maps-label">Razem mapy</span>
+                    <strong id="total-maps">0</strong>
+                </div>
             </div>
 
-            <!-- Dwa wykresy w siatce -->
-            <div class="charts-wrapper">
-                <div class="chart-box">
-                    <canvas id="mapsChart"></canvas>
+            <div class="stat-card">
+                <div class="stat-icon">◇</div>
+                <div>
+                    <span class="stat-label" id="summary-portals-label">Razem portale</span>
+                    <strong id="total-portals">0</strong>
                 </div>
-                <div class="chart-box">
-                    <canvas id="gilChart"></canvas>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">◌</div>
+                <div>
+                    <span class="stat-label" id="summary-clears-label">Liczba Clears</span>
+                    <strong id="total-clears">0</strong>
+                </div>
+            </div>
+
+            <div class="stat-card accent">
+                <div class="stat-icon">Gil</div>
+                <div>
+                    <span class="stat-label" id="summary-gil-label">Suma Gil</span>
+                    <strong id="total-gil">0</strong>
                 </div>
             </div>
         </section>
 
-        <section class="section-container">
-            <div class="section-header">
-                <span class="section-subtitle" data-i18n="dataSubtitle">DANE</span>
-                <h2 data-i18n="dataTitle">Szczegóły map i zysku</h2>
+        <section class="panel chart-panel">
+            <div class="panel-header">
+                <div>
+                    <span class="eyebrow">STATISTICS</span>
+                    <h2>Map Overview & Profits</h2>
+                </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="data-table">
+            <div class="chart-wrapper" style="position: relative; height:320px;">
+                <canvas id="charts"></canvas>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <span class="eyebrow">DATA</span>
+                    <h2>Szczegóły map</h2>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table id="data-table">
                     <thead>
                     <tr>
-                        <th data-i18n="thMapName">Nazwa mapy</th>
-                        <th data-i18n="thType">Typ</th>
-                        <th data-i18n="thLevel">Poziom</th>
-                        <th data-i18n="thMaps">Mapy</th>
-                        <th data-i18n="thPortals">Portale</th>
-                        <th data-i18n="thClears">Clears</th>
-                        <th data-i18n="thTotalGil">Suma Gil</th>
-                        <th data-i18n="thAvgGil">Śr. Gil / Mapa</th>
-                        <th data-i18n="thQuickActions">+1 Szybkie akcje</th>
+                        <th id="table-header-name">Nazwa mapy</th>
+                        <th id="table-header-level">Poziom</th>
+                        <th id="table-header-type">Typ</th>
+                        <th id="table-header-maps">Mapy</th>
+                        <th id="table-header-portals">Portale</th>
+                        <th id="table-header-clears">Clears</th>
+                        <th id="table-header-gil">Suma Gil</th>
+                        <th id="table-header-avg">Śr. Gil / Mapa</th>
                     </tr>
                     </thead>
-                    <tbody id="mapTableBody"></tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </section>
     </main>
 </div>
 
-<script src="js/translations.js?v=5"></script>
-<script src="js/mapsData.js?v=5"></script>
-<script src="js/storage.js?v=5"></script>
-<script src="js/calculations.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<!-- Kluczowe: Ścieżka js/app.js oraz type="module" -->
+<script type="module" src="js/app.js"></script>
+
 </body>
 </html>
