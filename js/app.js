@@ -1,151 +1,413 @@
-import { MAPS_DATABASE } from './mapsData.js';
-import { loadState, saveState } from './storage.js';
-import { calculateTotals, calculateAvgGil } from './calculations.js';
+import { MAPS_DATABASE } from "./mapsData.js";
+import { loadState, saveState, clearState, saveSession } from "./storage.js";
+import { calculateTotals, calculateAvgGil } from "./calculations.js";
 
-let appState = {};
-let chartInstance = null;
-
-document.addEventListener("DOMContentLoaded", () => {
-    initApp();
-});
-
-function initApp() {
-    // Ładowanie domyślnego stanu
-    const defaultData = {};
-    MAPS_DATABASE.forEach(map => {
-        defaultData[map.id] = {
-            mapId: map.id,
+function buildDefaultMapData() {
+    const data = {};
+    MAPS_DATABASE.forEach(m => {
+        data[m.id] = {
             num_maps: 0,
             num_portals: 0,
             num_clears: 0,
             earned_gil: 0,
-            isParty: map.type === "Party"
+            isParty: m.type === "Party"
         };
     });
+    return data;
+}
 
-    appState = loadState(defaultData);
+let mapData = loadState(buildDefaultMapData());
+let currentLang = "PL";
+let currentFilter = "ALL";
+let sortKey = "name";
+let sortAsc = true;
+let barChart = null;
 
-    // Wypełnienie wyboru daty i listy map
-    const calendar = document.getElementById("calendar");
-    if (calendar && !calendar.value) {
-        calendar.value = new Date().toISOString().split('T')[0];
+const elements = {
+    language: document.getElementById("language"),
+    calendar: document.getElementById("calendar"),
+    mapSelect: document.getElementById("map-select"),
+    numMaps: document.getElementById("num-maps"),
+    numPortals: document.getElementById("num-portals"),
+    numClears: document.getElementById("num-clears"),
+    earnedGil: document.getElementById("earned-gil"),
+
+    totalMaps: document.getElementById("total-maps"),
+    totalPortals: document.getElementById("total-portals"),
+    totalClears: document.getElementById("total-clears"),
+    totalGil: document.getElementById("total-gil"),
+
+    tableBody: document.getElementById("data-table").querySelector("tbody")
+};
+
+const translations = {
+    PL: {
+        eyebrowHeader: "DZIENNIK POSZUKIWACZA PRZYGÓD",
+        title: "FFXIV Map Tracker",
+        description: "Śledź mapy, portale, ukończone lochy i zysk w Gil.",
+        totalMaps: "Razem mapy",
+        totalPortals: "Razem portale",
+        totalClears: "Ukończone lochy",
+        totalGil: "Suma Gil",
+        language: "Wybór języka",
+        date: "Wybierz datę",
+        mapLabel: "Mapa",
+        numMaps: "Liczba map",
+        numPortals: "Liczba portali",
+        numClears: "Ukończone lochy (Clears)",
+        earnedGil: "Zarobiony Gil",
+        addDataBtn: "Dodaj dane",
+        editDataBtn: "Edytuj dane",
+        deleteDataBtn: "Usuń wybrane dane",
+        resetAllBtn: "Wyczyść wszystko",
+        saveCsvBtn: "Zapisz jako CSV",
+        saveExcelBtn: "Zapisz jako Excel",
+        eyebrowStats: "STATYSTYKI",
+        chartTitle: "Przegląd zysków i wskaźników",
+        eyebrowData: "DANE",
+        tableTitle: "Szczegóły map i zysku",
+        thName: "Nazwa mapy",
+        thType: "Typ",
+        thLevel: "Poziom",
+        thMaps: "Mapy",
+        thPortals: "Portale",
+        thClears: "Clears",
+        thGil: "Suma Gil",
+        thAvgGil: "Śr. Gil / Mapa",
+        thQuick: "+1 Szybkie akcje"
+    },
+    ENG: {
+        eyebrowHeader: "ADVENTURER'S RECORD",
+        title: "FFXIV Map Tracker",
+        description: "Track maps, portals, dungeon clears and Gil earnings.",
+        totalMaps: "Total maps",
+        totalPortals: "Total portals",
+        totalClears: "Dungeon Clears",
+        totalGil: "Total Gil",
+        language: "Language",
+        date: "Select date",
+        mapLabel: "Map",
+        numMaps: "Number of maps",
+        numPortals: "Number of portals",
+        numClears: "Dungeon Clears",
+        earnedGil: "Earned Gil",
+        addDataBtn: "Add data",
+        editDataBtn: "Edit data",
+        deleteDataBtn: "Delete selected data",
+        resetAllBtn: "Reset all data",
+        saveCsvBtn: "Save as CSV",
+        saveExcelBtn: "Save as Excel",
+        eyebrowStats: "STATISTICS",
+        chartTitle: "Earnings & Rates Overview",
+        eyebrowData: "DATA",
+        tableTitle: "Map Details & Earnings",
+        thName: "Map Name",
+        thType: "Type",
+        thLevel: "Level",
+        thMaps: "Maps",
+        thPortals: "Portals",
+        thClears: "Clears",
+        thGil: "Total Gil",
+        thAvgGil: "Avg. Gil / Map",
+        thQuick: "+1 Quick Actions"
+    },
+    FR: {
+        eyebrowHeader: "REGISTRE D'AVENTURIER",
+        title: "Suivi de carte FFXIV",
+        description: "Suivez vos cartes, portails, donjons terminés et vos gains en Gils.",
+        totalMaps: "Cartes totales",
+        totalPortals: "Portails totaux",
+        totalClears: "Donjons terminés",
+        totalGil: "Gils totaux",
+        language: "Langue",
+        date: "Sélectionner une date",
+        mapLabel: "Carte",
+        numMaps: "Nombre de cartes",
+        numPortals: "Nombre de portails",
+        numClears: "Donjons terminés",
+        earnedGil: "Gils gagnés",
+        addDataBtn: "Ajouter des données",
+        editDataBtn: "Modifier les données",
+        deleteDataBtn: "Supprimer les données",
+        resetAllBtn: "Tout réinitialiser",
+        saveCsvBtn: "Enregistrer CSV",
+        saveExcelBtn: "Enregistrer Excel",
+        eyebrowStats: "STATISTIQUES",
+        chartTitle: "Aperçu des gains et des taux",
+        eyebrowData: "DONNÉES",
+        tableTitle: "Détails des cartes et gains",
+        thName: "Nom de la carte",
+        thType: "Type",
+        thLevel: "Niveau",
+        thMaps: "Cartes",
+        thPortals: "Portails",
+        thClears: "Clears",
+        thGil: "Gils totaux",
+        thAvgGil: "Moy. Gils / Carte",
+        thQuick: "+1 Actions rapides"
     }
+};
 
-    populateMapSelect();
-    setupEventListeners();
-    updateUI();
-}
-
-function populateMapSelect() {
-    const select = document.getElementById("map-select");
-    if (!select) return;
-
-    select.innerHTML = MAPS_DATABASE.map(map =>
-        `<option value="${map.id}">[Lv.${map.level}] ${map.name} (${map.type})</option>`
-    ).join("");
-}
-
-function setupEventListeners() {
-    const addBtn = document.getElementById("add-data");
-    if (addBtn) {
-        addBtn.addEventListener("click", handleAddData);
-    }
-}
-
-function handleAddData() {
-    const mapId = document.getElementById("map-select").value;
-    const numMaps = Number(document.getElementById("num-maps").value) || 0;
-    const numPortals = Number(document.getElementById("num-portals").value) || 0;
-    const numClears = Number(document.getElementById("num-clears").value) || 0;
-    const earnedGil = Number(document.getElementById("earned-gil").value) || 0;
-
-    if (!appState[mapId]) {
-        const mapInfo = MAPS_DATABASE.find(m => m.id === mapId);
-        appState[mapId] = { mapId, num_maps: 0, num_portals: 0, num_clears: 0, earned_gil: 0, isParty: mapInfo?.type === "Party" };
-    }
-
-    appState[mapId].num_maps += numMaps;
-    appState[mapId].num_portals += numPortals;
-    appState[mapId].num_clears += numClears;
-    appState[mapId].earned_gil += earnedGil;
-
-    saveState(appState);
-    updateUI();
-
-    // Reset pól formularza
-    document.getElementById("num-maps").value = 0;
-    document.getElementById("num-portals").value = 0;
-    document.getElementById("num-clears").value = 0;
-    document.getElementById("earned-gil").value = 0;
-}
-
-function updateUI() {
-    const totals = calculateTotals(appState);
-
-    // Aktualizacja kart podsumowania
-    document.getElementById("total-maps").textContent = totals.totalMaps;
-    document.getElementById("total-portals").textContent = totals.totalPortals;
-    document.getElementById("total-clears").textContent = totals.totalClears;
-    document.getElementById("total-gil").textContent = `${totals.totalGil.toLocaleString()} Gil`;
-
-    renderTable();
-    renderChart();
-}
-
-function renderTable() {
-    const tbody = document.querySelector("#data-table tbody");
-    if (!tbody) return;
-
-    tbody.innerHTML = MAPS_DATABASE.map(map => {
-        const entry = appState[map.id] || { num_maps: 0, num_portals: 0, num_clears: 0, earned_gil: 0 };
-        const avgGil = calculateAvgGil(entry.earned_gil, entry.num_maps);
-
-        return `
-            <tr>
-                <td><strong>${map.name}</strong></td>
-                <td>Lv. ${map.level}</td>
-                <td>${map.type}</td>
-                <td>${entry.num_maps}</td>
-                <td>${entry.num_portals}</td>
-                <td>${entry.num_clears}</td>
-                <td>${Number(entry.earned_gil).toLocaleString()} Gil</td>
-                <td>${avgGil.toLocaleString()} Gil</td>
-            </tr>
-        `;
-    }).join("");
-}
-
-function renderChart() {
-    const ctx = document.getElementById("charts")?.getContext("2d");
-    if (!ctx) return;
-
-    const labels = MAPS_DATABASE.map(m => `[Lv.${m.level}] ${m.name}`);
-    const mapsData = MAPS_DATABASE.map(m => appState[m.id]?.num_maps || 0);
-    const portalsData = MAPS_DATABASE.map(m => appState[m.id]?.num_portals || 0);
-
-    if (chartInstance) {
-        chartInstance.destroy();
-    }
-
-    chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                { label: 'Mapy', data: mapsData, backgroundColor: '#c5a059' },
-                { label: 'Portale', data: portalsData, backgroundColor: '#4a70a9' }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { ticks: { color: '#8c92a0', font: { size: 10 } }, grid: { color: '#232730' } },
-                y: { ticks: { color: '#8c92a0' }, grid: { color: '#232730' }, beginAtZero: true }
-            },
-            plugins: {
-                legend: { labels: { color: '#ffffff' } }
-            }
-        }
+function populateMapDropdown() {
+    elements.mapSelect.innerHTML = "";
+    MAPS_DATABASE.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = `[Lv.${m.level}] ${m.name} (${m.type})`;
+        elements.mapSelect.appendChild(opt);
     });
 }
+
+function initCharts() {
+    const barCanvas = document.getElementById("charts");
+    if (barCanvas && typeof Chart !== "undefined") {
+        barChart = new Chart(barCanvas.getContext("2d"), {
+            type: "bar",
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: "#dce4ef" } } },
+                scales: {
+                    x: { ticks: { color: "#9ba7b7" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                    y: { beginAtZero: true, ticks: { color: "#9ba7b7" }, grid: { color: "rgba(255,255,255,0.05)" } }
+                }
+            }
+        });
+    }
+}
+
+function updateCharts() {
+    if (!barChart) return;
+    const labels = [];
+    const gilData = [];
+
+    MAPS_DATABASE.forEach(m => {
+        const entry = mapData[m.id];
+        if (entry && entry.earned_gil > 0) {
+            labels.push(m.name);
+            gilData.push(entry.earned_gil);
+        }
+    });
+
+    barChart.data.labels = labels;
+    barChart.data.datasets = [{
+        label: "Gil per Map Type",
+        data: gilData,
+        backgroundColor: "rgba(216, 155, 72, 0.75)",
+        borderColor: "rgba(216, 155, 72, 1)",
+        borderWidth: 1
+    }];
+    barChart.update();
+}
+
+function updateSummary() {
+    const totals = calculateTotals(mapData);
+
+    elements.totalMaps.textContent = `${totals.totalMaps} (Portal: ${totals.portalRate}%)`;
+    elements.totalPortals.textContent = totals.totalPortals;
+    elements.totalClears.textContent = `${totals.totalClears} (Clear: ${totals.clearRate}%)`;
+    elements.totalGil.textContent = `${totals.totalGil.toLocaleString()} Gil`;
+
+    saveState(mapData);
+    updateCharts();
+    updateTable();
+}
+
+function getFilteredAndSortedMaps() {
+    let list = [...MAPS_DATABASE];
+
+    if (currentFilter === "PARTY") list = list.filter(m => m.type === "Party");
+    if (currentFilter === "SOLO") list = list.filter(m => m.type === "Solo");
+
+    list.sort((a, b) => {
+        let valA = a[sortKey];
+        let valB = b[sortKey];
+
+        if (sortKey === "earned_gil" || sortKey === "num_maps" || sortKey === "num_portals") {
+            valA = mapData[a.id][sortKey] || 0;
+            valB = mapData[b.id][sortKey] || 0;
+        }
+
+        if (valA < valB) return sortAsc ? -1 : 1;
+        if (valA > valB) return sortAsc ? 1 : -1;
+        return 0;
+    });
+
+    return list;
+}
+
+function updateTable() {
+    elements.tableBody.innerHTML = "";
+    const filteredMaps = getFilteredAndSortedMaps();
+
+    filteredMaps.forEach(m => {
+        const entry = mapData[m.id] || { num_maps: 0, num_portals: 0, num_clears: 0, earned_gil: 0 };
+        const avgGil = calculateAvgGil(entry.earned_gil, entry.num_maps);
+
+        const row = elements.tableBody.insertRow();
+        row.innerHTML = `
+            <td><strong>${m.name}</strong></td>
+            <td>${m.type}</td>
+            <td>${m.level}</td>
+            <td>${entry.num_maps}</td>
+            <td>${m.type === "Party" ? entry.num_portals : "-"}</td>
+            <td>${m.type === "Party" ? entry.num_clears : "-"}</td>
+            <td>${entry.earned_gil.toLocaleString()} Gil</td>
+            <td>${avgGil.toLocaleString()} Gil</td>
+            <td>
+                <button class="quick-add" data-id="${m.id}" data-type="map">+1 Map</button>
+                ${m.type === "Party" ? `<button class="quick-add" data-id="${m.id}" data-type="portal">+1 Portal</button>` : ""}
+                ${m.type === "Party" ? `<button class="quick-add" data-id="${m.id}" data-type="clear">+1 Clear</button>` : ""}
+            </td>
+        `;
+    });
+
+    document.querySelectorAll(".quick-add").forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.target.getAttribute("data-id");
+            const type = e.target.getAttribute("data-type");
+            if (type === "map") mapData[id].num_maps += 1;
+            if (type === "portal") mapData[id].num_portals += 1;
+            if (type === "clear") mapData[id].num_clears += 1;
+            updateSummary();
+        };
+    });
+}
+
+function changeLanguage(lang) {
+    const t = translations[lang];
+    if (!t) return;
+    currentLang = lang;
+
+    document.getElementById("header-eyebrow").textContent = t.eyebrowHeader;
+    document.getElementById("main-title").textContent = t.title;
+    document.querySelector(".header-description").textContent = t.description;
+
+    document.getElementById("summary-maps-label").textContent = t.totalMaps;
+    document.getElementById("summary-portals-label").textContent = t.totalPortals;
+    document.getElementById("summary-clears-label").textContent = t.totalClears;
+    document.getElementById("summary-gil-label").textContent = t.totalGil;
+
+    document.querySelector('label[for="language"]').textContent = t.language;
+    document.querySelector('label[for="calendar"]').textContent = t.date;
+    document.querySelector('label[for="map-select"]').textContent = t.mapLabel;
+    document.querySelector('label[for="num-maps"]').textContent = t.numMaps;
+    document.querySelector('label[for="num-portals"]').textContent = t.numPortals;
+    document.querySelector('label[for="num-clears"]').textContent = t.numClears;
+    document.querySelector('label[for="earned-gil"]').textContent = t.earnedGil;
+
+    document.getElementById("add-data").textContent = t.addDataBtn;
+    document.getElementById("edit-data").textContent = t.editDataBtn;
+    document.getElementById("delete-data").textContent = t.deleteDataBtn;
+    document.getElementById("reset-all").textContent = t.resetAllBtn;
+
+    document.getElementById("chart-eyebrow").textContent = t.eyebrowStats;
+    document.getElementById("chart-title").textContent = t.chartTitle;
+    document.getElementById("table-eyebrow").textContent = t.eyebrowData;
+    document.getElementById("table-title").textContent = t.tableTitle;
+
+    document.getElementById("th-name").textContent = t.thName;
+    document.getElementById("th-type").textContent = t.thType;
+    document.getElementById("th-level").textContent = t.thLevel;
+    document.getElementById("th-maps").textContent = t.thMaps;
+    document.getElementById("th-portals").textContent = t.thPortals;
+    document.getElementById("th-clears").textContent = t.thClears;
+    document.getElementById("th-gil").textContent = t.thGil;
+    document.getElementById("th-avggil").textContent = t.thAvgGil;
+    document.getElementById("th-quick").textContent = t.thQuick;
+
+    updateCharts();
+}
+
+function exportCSV() {
+    const exportData = MAPS_DATABASE.map(m => ({
+        ID: m.id,
+        Name: m.name,
+        Level: m.level,
+        Type: m.type,
+        Maps: mapData[m.id].num_maps,
+        Portals: mapData[m.id].num_portals,
+        Clears: mapData[m.id].num_clears,
+        EarnedGil: mapData[m.id].earned_gil
+    }));
+
+    const csv = Papa.unparse(exportData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute("download", `FFXIV_Map_Tracker_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportExcel() {
+    const exportData = MAPS_DATABASE.map(m => ({
+        "Mapa": m.name,
+        "Poziom": m.level,
+        "Typ": m.type,
+        "Użyte Mapy": mapData[m.id].num_maps,
+        "Portale": mapData[m.id].num_portals,
+        "Ukończone Lochy": mapData[m.id].num_clears,
+        "Zysk (Gil)": mapData[m.id].earned_gil
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Map Tracker");
+    XLSX.writeFile(workbook, `FFXIV_Map_Tracker_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    populateMapDropdown();
+    initCharts();
+    updateSummary();
+
+    elements.language.onchange = e => changeLanguage(e.target.value);
+
+    // Przełącznik trybu Overlay
+    const toggleBtn = document.getElementById("toggle-overlay-btn");
+    if (localStorage.getItem("overlay_mode") === "true") {
+        document.body.classList.add("overlay-mode");
+        if (toggleBtn) toggleBtn.textContent = "🔍 Pełny widok";
+    }
+
+    if (toggleBtn) {
+        toggleBtn.onclick = () => {
+            const isOverlay = document.body.classList.toggle("overlay-mode");
+            localStorage.setItem("overlay_mode", isOverlay);
+            toggleBtn.textContent = isOverlay ? "🔍 Pełny widok" : "📐 Tryb Overlay";
+            updateTable();
+        };
+    }
+
+    document.getElementById("add-data").onclick = () => {
+        const id = elements.mapSelect.value;
+        mapData[id].num_maps += parseInt(elements.numMaps.value, 10) || 0;
+        mapData[id].num_portals += parseInt(elements.numPortals.value, 10) || 0;
+        mapData[id].num_clears += parseInt(elements.numClears.value, 10) || 0;
+        mapData[id].earned_gil += parseInt(elements.earnedGil.value, 10) || 0;
+
+        if (elements.calendar.value) {
+            saveSession(elements.calendar.value, mapData[id]);
+        }
+
+        updateSummary();
+        elements.numMaps.value = 0;
+        elements.numPortals.value = 0;
+        elements.numClears.value = 0;
+        elements.earnedGil.value = 0;
+    };
+
+    document.getElementById("reset-all").onclick = () => {
+        if (confirm("Czy na pewno chcesz usunąć wszystkie dane?")) {
+            clearState();
+            mapData = buildDefaultMapData();
+            updateSummary();
+        }
+    };
+
+    document.getElementById("save-csv").onclick = exportCSV;
+    document.getElementById("save-excel").onclick = exportExcel;
+});
