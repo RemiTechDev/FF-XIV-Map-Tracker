@@ -1,348 +1,852 @@
-let mapData = {
+const mapData = {
     70: { num_maps: 0, num_portals: 0 },
     80: { num_maps: 0, num_portals: 0 },
     90: { num_maps: 0, num_portals: 0 },
     100: { num_maps: 0, num_portals: 0 }
 };
 
-const totalMapsElement = document.getElementById('total-maps');
-const totalPortalsElement = document.getElementById('total-portals');
-const mapsWithoutPortalsElement = document.getElementById('maps-without-portals');
-const percentageWithoutPortalsElement = document.getElementById('percentage-without-portals');
-const ctx = document.getElementById('charts').getContext('2d');
-const dataTableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+const elements = {
+    totalMaps: document.getElementById("total-maps"),
+    totalPortals: document.getElementById("total-portals"),
+    mapsWithoutPortals: document.getElementById("maps-without-portals"),
+    percentageWithoutPortals:
+        document.getElementById("percentage-without-portals"),
 
-const colors = {
-    70: 'rgba(75, 192, 192, 0.6)',
-    80: 'rgba(153, 102, 255, 0.6)',
-    90: 'rgba(255, 159, 64, 0.6)',
-    100: 'rgba(255, 99, 132, 0.6)'
+    language: document.getElementById("language"),
+    calendar: document.getElementById("calendar"),
+    mapLevel: document.getElementById("map-level"),
+    numMaps: document.getElementById("num-maps"),
+    numPortals: document.getElementById("num-portals"),
+
+    tableBody:
+        document
+            .getElementById("data-table")
+            .querySelector("tbody")
 };
 
-let chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: ['Maps', 'Portals', 'Without Portals'],
-        datasets: []
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
-
-// Translations
 const translations = {
     PL: {
         title: "FFXIV Map Tracker",
-        totalMaps: "Razem Mapy",
-        totalPortals: "Razem Portale",
-        mapsWithoutPortals: "Mapy bez Portali",
-        percentageWithoutPortals: "Procent Map bez Portali",
-        addDataBtn: "Dodaj Dane",
-        editDataBtn: "Edytuj Dane",
-        deleteDataBtn: "Usuń Wybrane Dane",
-        loadCsvBtn: "Załaduj CSV",
-        saveCsvBtn: "Zapisz jako CSV",
-        loadExcelBtn: "Załaduj Excel",
-        saveExcelBtn: "Zapisz jako Excel",
+        description:
+            "Śledź mapy, portale i postęp swoich treasure runs.",
+
+        totalMaps: "Razem mapy",
+        totalPortals: "Razem portale",
+        mapsWithoutPortals: "Mapy bez portali",
+        percentageWithoutPortals: "Bez portali",
+
         language: "Wybór języka",
         date: "Wybierz datę",
-        mapLevel: "Poziom Mapy",
-        numMaps: "Liczba Map",
-        numPortals: "Liczba Portali",
-        tableHeaderLevel: "Poziom Mapy",
-        tableHeaderMaps: "Liczba Map",
-        tableHeaderPortals: "Liczba Portali",
-        tableHeaderPercentage: "Procent Map bez Portali" // Nowy nagłówek
+        mapLevel: "Poziom mapy",
+        numMaps: "Liczba map",
+        numPortals: "Liczba portali",
+
+        addDataBtn: "Dodaj dane",
+        editDataBtn: "Edytuj dane",
+        deleteDataBtn: "Usuń wybrane dane",
+
+        loadCsvBtn: "Załaduj CSV",
+        saveCsvBtn: "Zapisz jako CSV",
+
+        loadExcelBtn: "Załaduj Excel",
+        saveExcelBtn: "Zapisz jako Excel",
+
+        tableHeaderLevel: "Poziom mapy",
+        tableHeaderMaps: "Liczba map",
+        tableHeaderPortals: "Liczba portali",
+        tableHeaderPercentage: "Procent bez portali"
     },
+
     ENG: {
         title: "FFXIV Map Tracker",
-        totalMaps: "Total Maps",
-        totalPortals: "Total Portals",
-        mapsWithoutPortals: "Maps Without Portals",
-        percentageWithoutPortals: "Percentage of Maps Without Portals",
-        addDataBtn: "Add Data",
-        editDataBtn: "Edit Data",
-        deleteDataBtn: "Delete Selected Data",
+        description:
+            "Track maps, portals and your treasure run progress.",
+
+        totalMaps: "Total maps",
+        totalPortals: "Total portals",
+        mapsWithoutPortals: "Maps without portals",
+        percentageWithoutPortals: "Without portals",
+
+        language: "Language",
+        date: "Select date",
+        mapLevel: "Map level",
+        numMaps: "Number of maps",
+        numPortals: "Number of portals",
+
+        addDataBtn: "Add data",
+        editDataBtn: "Edit data",
+        deleteDataBtn: "Delete selected data",
+
         loadCsvBtn: "Load CSV",
         saveCsvBtn: "Save as CSV",
+
         loadExcelBtn: "Load Excel",
         saveExcelBtn: "Save as Excel",
-        language: "Language Selection",
-        date: "Select Date",
-        mapLevel: "Map Level",
-        numMaps: "Number of Maps",
-        numPortals: "Number of Portals",
-        tableHeaderLevel: "Map Level",
-        tableHeaderMaps: "Number of Maps",
-        tableHeaderPortals: "Number of Portals",
-        tableHeaderPercentage: "Percentage Without Portals" // Nowy nagłówek
+
+        tableHeaderLevel: "Map level",
+        tableHeaderMaps: "Number of maps",
+        tableHeaderPortals: "Number of portals",
+        tableHeaderPercentage: "Percentage without portals"
     },
+
     FR: {
         title: "Suivi de carte FFXIV",
+        description:
+            "Suivez vos cartes, portails et votre progression.",
+
         totalMaps: "Cartes totales",
-        totalPortals: "Total des portails",
+        totalPortals: "Portails totaux",
         mapsWithoutPortals: "Cartes sans portails",
-        percentageWithoutPortals: "Pourcentage de cartes sans portails",
-        addDataBtn: "Ajouter des données",
-        editDataBtn: "Modifier les données",
-        deleteDataBtn: "Supprimer les données sélectionnées",
-        loadCsvBtn: "Charger CSV",
-        saveCsvBtn: "Enregistrer en tant que CSV",
-        loadExcelBtn: "Charger Excel",
-        saveExcelBtn: "Enregistrer en tant qu'Excel",
-        language: "Sélection de la langue",
+        percentageWithoutPortals: "Sans portails",
+
+        language: "Langue",
         date: "Sélectionner une date",
-        mapLevel: "Niveau de la carte",
+        mapLevel: "Niveau de carte",
         numMaps: "Nombre de cartes",
         numPortals: "Nombre de portails",
-        tableHeaderLevel: "Niveau de la carte",
-        tableHeaderMaps: "Nombre de cartes",
-        tableHeaderPortals: "Nombre de portails",
-        tableHeaderPercentage: "Pourcentage sans portails" // Nowy nagłówek
+
+        addDataBtn: "Ajouter des données",
+        editDataBtn: "Modifier les données",
+        deleteDataBtn: "Supprimer les données",
+
+        loadCsvBtn: "Charger CSV",
+        saveCsvBtn: "Enregistrer CSV",
+
+        loadExcelBtn: "Charger Excel",
+        saveExcelBtn: "Enregistrer Excel",
+
+        tableHeaderLevel: "Niveau",
+        tableHeaderMaps: "Cartes",
+        tableHeaderPortals: "Portails",
+        tableHeaderPercentage: "Pourcentage sans portails"
     }
 };
 
-// Function to update summary and chart
-function updateSummary() {
-    const totalMaps = Object.values(mapData).reduce((sum, level) => sum + level.num_maps, 0);
-    const totalPortals = Object.values(mapData).reduce((sum, level) => sum + level.num_portals, 0);
-    const mapsWithoutPortals = totalMaps - totalPortals;
 
-    totalMapsElement.textContent = totalMaps;
-    totalPortalsElement.textContent = totalPortals;
-    mapsWithoutPortalsElement.textContent = mapsWithoutPortals;
+/* --------------------------------
+   CHART
+-------------------------------- */
 
-    const percentage = totalMaps > 0 ? ((mapsWithoutPortals / totalMaps) * 100).toFixed(2) : 0;
-    percentageWithoutPortalsElement.textContent = percentage + "%";
+let chart = null;
 
-    chart.data.datasets = []; // Clear previous datasets
+function createChart() {
 
-    for (const level in mapData) {
-        chart.data.datasets.push({
-            label: `Level ${level}`,
-            data: [
-                mapData[level].num_maps,
-                mapData[level].num_portals,
-                mapData[level].num_maps - mapData[level].num_portals
-            ],
-            backgroundColor: colors[level],
-        });
+    const canvas = document.getElementById("charts");
+
+    if (!canvas) {
+        return;
     }
 
-    chart.update();
-    updateDataTable();
+    // Jeżeli Chart.js nie załadował się z CDN,
+    // aplikacja nadal ma działać.
+    if (typeof Chart === "undefined") {
+
+        console.warn(
+            "Chart.js nie został załadowany. Wykres jest niedostępny."
+        );
+
+        return;
+    }
+
+    const ctx = canvas.getContext("2d");
+
+    chart = new Chart(ctx, {
+
+        type: "bar",
+
+        data: {
+            labels: [
+                "Maps",
+                "Portals",
+                "Without Portals"
+            ],
+
+            datasets: []
+        },
+
+        options: {
+
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "#dce4ef"
+                    }
+                }
+            },
+
+            scales: {
+
+                x: {
+                    ticks: {
+                        color: "#9ba7b7"
+                    },
+
+                    grid: {
+                        color: "rgba(255,255,255,0.05)"
+                    }
+                },
+
+                y: {
+
+                    beginAtZero: true,
+
+                    ticks: {
+                        color: "#9ba7b7"
+                    },
+
+                    grid: {
+                        color: "rgba(255,255,255,0.05)"
+                    }
+                }
+            }
+        }
+    });
 }
 
-// Function to update data table
-function updateDataTable() {
-    dataTableBody.innerHTML = ''; // Clear the table
-    for (const level in mapData) {
-        const maps = mapData[level].num_maps;
-        const portals = mapData[level].num_portals;
-        const withoutPortals = maps - portals;
-        const percentage = maps > 0 ? ((withoutPortals / maps) * 100).toFixed(2) : 0;
 
-        const row = dataTableBody.insertRow();
+/* --------------------------------
+   SUMMARY
+-------------------------------- */
+
+function updateSummary() {
+
+    let totalMaps = 0;
+    let totalPortals = 0;
+
+    Object.values(mapData).forEach(level => {
+
+        totalMaps += Number(level.num_maps) || 0;
+        totalPortals += Number(level.num_portals) || 0;
+
+    });
+
+    const mapsWithoutPortals =
+        Math.max(0, totalMaps - totalPortals);
+
+    const percentage =
+        totalMaps > 0
+            ? ((mapsWithoutPortals / totalMaps) * 100).toFixed(2)
+            : "0.00";
+
+
+    elements.totalMaps.textContent = totalMaps;
+    elements.totalPortals.textContent = totalPortals;
+    elements.mapsWithoutPortals.textContent = mapsWithoutPortals;
+    elements.percentageWithoutPortals.textContent =
+        `${percentage}%`;
+
+
+    updateChart();
+    updateTable();
+}
+
+
+/* --------------------------------
+   CHART UPDATE
+-------------------------------- */
+
+function updateChart() {
+
+    if (!chart) {
+        return;
+    }
+
+    const colors = {
+        70: "rgba(77, 155, 216, 0.75)",
+        80: "rgba(130, 105, 220, 0.75)",
+        90: "rgba(216, 155, 72, 0.75)",
+        100: "rgba(210, 82, 105, 0.75)"
+    };
+
+    chart.data.datasets = [];
+
+    Object.keys(mapData).forEach(level => {
+
+        const maps =
+            Number(mapData[level].num_maps) || 0;
+
+        const portals =
+            Number(mapData[level].num_portals) || 0;
+
+        chart.data.datasets.push({
+
+            label: `Level ${level}`,
+
+            data: [
+                maps,
+                portals,
+                Math.max(0, maps - portals)
+            ],
+
+            backgroundColor: colors[level],
+
+            borderColor: colors[level].replace(
+                "0.75",
+                "1"
+            ),
+
+            borderWidth: 1
+        });
+    });
+
+    chart.update();
+}
+
+
+/* --------------------------------
+   TABLE
+-------------------------------- */
+
+function updateTable() {
+
+    elements.tableBody.innerHTML = "";
+
+    Object.keys(mapData).forEach(level => {
+
+        const maps =
+            Number(mapData[level].num_maps) || 0;
+
+        const portals =
+            Number(mapData[level].num_portals) || 0;
+
+        const withoutPortals =
+            Math.max(0, maps - portals);
+
+        const percentage =
+            maps > 0
+                ? ((withoutPortals / maps) * 100).toFixed(2)
+                : "0.00";
+
+
+        const row =
+            elements.tableBody.insertRow();
+
         row.innerHTML = `
             <td>${level}</td>
             <td>${maps}</td>
             <td>${portals}</td>
-            <td>${percentage}%</td> <!-- Dodano kolumnę dla % -->
+            <td>${percentage}%</td>
         `;
-    }
+    });
 }
 
-// Function to change language
+
+/* --------------------------------
+   LANGUAGE
+-------------------------------- */
+
 function changeLanguage(lang) {
-    document.title = translations[lang].title;
-    document.getElementById('main-title').textContent = translations[lang].title;
-    document.getElementById('summary-maps').textContent = translations[lang].totalMaps + ": " + totalMapsElement.textContent;
-    document.getElementById('summary-portals').textContent = translations[lang].totalPortals + ": " + totalPortalsElement.textContent;
-    document.getElementById('summary-without-portals').textContent = translations[lang].mapsWithoutPortals + ": " + mapsWithoutPortalsElement.textContent;
-    document.getElementById('summary-percentage').textContent = translations[lang].percentageWithoutPortals + ": " + percentageWithoutPortalsElement.textContent;
 
-    // Update table headers
-    document.getElementById("table-header-level").innerText = translations[lang].tableHeaderLevel;
-    document.getElementById("table-header-maps").innerText = translations[lang].tableHeaderMaps;
-    document.getElementById("table-header-portals").innerText = translations[lang].tableHeaderPortals;
-    document.getElementById("table-header-percentage").innerText = translations[lang].tableHeaderPercentage; // Uaktualnienie nagłówka dla %
+    const t = translations[lang];
 
-    document.getElementById('language').previousElementSibling.textContent = translations[lang].language;
-    document.getElementById('calendar').previousElementSibling.textContent = translations[lang].date;
-    document.getElementById('map-level').previousElementSibling.textContent = translations[lang].mapLevel;
-    document.getElementById('num-maps').previousElementSibling.textContent = translations[lang].numMaps;
-    document.getElementById('num-portals').previousElementSibling.textContent = translations[lang].numPortals;
+    if (!t) {
+        return;
+    }
 
-    document.getElementById('add-data').textContent = translations[lang].addDataBtn;
-    document.getElementById('edit-data').textContent = translations[lang].editDataBtn;
-    document.getElementById('delete-data').textContent = translations[lang].deleteDataBtn;
-    document.getElementById('load-csv').textContent = translations[lang].loadCsvBtn;
-    document.getElementById('save-csv').textContent = translations[lang].saveCsvBtn;
-    document.getElementById('load-excel').textContent = translations[lang].loadExcelBtn;
-    document.getElementById('save-excel').textContent = translations[lang].saveExcelBtn;
+    document.documentElement.lang =
+        lang === "PL"
+            ? "pl"
+            : lang === "FR"
+                ? "fr"
+                : "en";
+
+    document.title = t.title;
+
+    document.getElementById("main-title").textContent =
+        t.title;
+
+    document.querySelector(".header-description").textContent =
+        t.description;
+
+
+    document.getElementById(
+        "summary-maps-label"
+    ).textContent = t.totalMaps;
+
+    document.getElementById(
+        "summary-portals-label"
+    ).textContent = t.totalPortals;
+
+    document.getElementById(
+        "summary-without-portals-label"
+    ).textContent = t.mapsWithoutPortals;
+
+    document.getElementById(
+        "summary-percentage-label"
+    ).textContent = t.percentageWithoutPortals;
+
+
+    elements.language
+        .closest(".menu")
+        .querySelector('label[for="language"]')
+        .textContent = t.language;
+
+    elements.calendar
+        .closest(".menu")
+        .querySelector('label[for="calendar"]')
+        .textContent = t.date;
+
+    elements.mapLevel
+        .closest(".menu")
+        .querySelector('label[for="map-level"]')
+        .textContent = t.mapLevel;
+
+    elements.numMaps
+        .closest(".menu")
+        .querySelector('label[for="num-maps"]')
+        .textContent = t.numMaps;
+
+    elements.numPortals
+        .closest(".menu")
+        .querySelector('label[for="num-portals"]')
+        .textContent = t.numPortals;
+
+
+    document.getElementById("add-data").textContent =
+        t.addDataBtn;
+
+    document.getElementById("edit-data").textContent =
+        t.editDataBtn;
+
+    document.getElementById("delete-data").textContent =
+        t.deleteDataBtn;
+
+    document.getElementById("load-csv").textContent =
+        t.loadCsvBtn;
+
+    document.getElementById("save-csv").textContent =
+        t.saveCsvBtn;
+
+    document.getElementById("load-excel").textContent =
+        t.loadExcelBtn;
+
+    document.getElementById("save-excel").textContent =
+        t.saveExcelBtn;
+
+
+    document.getElementById(
+        "table-header-level"
+    ).textContent = t.tableHeaderLevel;
+
+    document.getElementById(
+        "table-header-maps"
+    ).textContent = t.tableHeaderMaps;
+
+    document.getElementById(
+        "table-header-portals"
+    ).textContent = t.tableHeaderPortals;
+
+    document.getElementById(
+        "table-header-percentage"
+    ).textContent = t.tableHeaderPercentage;
 }
 
-// Event listener for language change
-document.getElementById('language').onchange = (event) => {
-    const lang = event.target.value;
-    changeLanguage(lang);
-};
 
-// Function to add data
-document.getElementById('add-data').onclick = () => {
-    const mapLevel = document.getElementById('map-level').value;
-    const numMaps = parseInt(document.getElementById('num-maps').value);
-    const numPortals = parseInt(document.getElementById('num-portals').value);
-    
-    if (!isNaN(numMaps) && !isNaN(numPortals)) {
-        mapData[mapLevel].num_maps += numMaps;
-        mapData[mapLevel].num_portals += numPortals;
-        updateSummary();
-    } else {
-        alert("Proszę wprowadzić poprawne liczby."); // 'Please enter valid numbers.'
+/* --------------------------------
+   ADD DATA
+-------------------------------- */
+
+document.getElementById("add-data").onclick = () => {
+
+    const level = elements.mapLevel.value;
+
+    const maps =
+        parseInt(elements.numMaps.value, 10);
+
+    const portals =
+        parseInt(elements.numPortals.value, 10);
+
+
+    if (
+        Number.isNaN(maps) ||
+        Number.isNaN(portals) ||
+        maps < 0 ||
+        portals < 0
+    ) {
+
+        alert("Podaj poprawne liczby.");
+
+        return;
     }
-};
 
-// Function to edit data
-document.getElementById('edit-data').onclick = () => {
-    const mapLevel = document.getElementById('map-level').value;
-    const numMaps = prompt("Podaj nową liczbę map:", mapData[mapLevel].num_maps);
-    const numPortals = prompt("Podaj nową liczbę portali", mapData[mapLevel].num_portals);
-    
-    const newNumMaps = parseInt(numMaps);
-    const newNumPortals = parseInt(numPortals);
-    
-    if (!isNaN(newNumMaps) && !isNaN(newNumPortals)) {
-        mapData[mapLevel].num_maps = newNumMaps;
-        mapData[mapLevel].num_portals = newNumPortals;
-        updateSummary();
-    } else {
-        alert("Proszę wprowadzić poprawne liczby."); // 'Please enter valid numbers.'
+    if (portals > maps) {
+
+        alert(
+            "Liczba portali nie może być większa niż liczba map."
+        );
+
+        return;
     }
+
+
+    mapData[level].num_maps += maps;
+    mapData[level].num_portals += portals;
+
+    updateSummary();
+
+    elements.numMaps.value = 0;
+    elements.numPortals.value = 0;
 };
 
-// Function to delete data
-document.getElementById('delete-data').onclick = () => {
-    const mapLevel = document.getElementById('map-level').value;
-    if (confirm("Czy na pewno chcesz usunąć dane dla poziomu mapy " + mapLevel + "?")) {
-        mapData[mapLevel].num_maps = 0;
-        mapData[mapLevel].num_portals = 0;
-        updateSummary();
+
+/* --------------------------------
+   EDIT DATA
+-------------------------------- */
+
+document.getElementById("edit-data").onclick = () => {
+
+    const level = elements.mapLevel.value;
+
+    const newMaps =
+        prompt(
+            "Podaj nową liczbę map:",
+            mapData[level].num_maps
+        );
+
+    if (newMaps === null) {
+        return;
     }
+
+    const newPortals =
+        prompt(
+            "Podaj nową liczbę portali:",
+            mapData[level].num_portals
+        );
+
+    if (newPortals === null) {
+        return;
+    }
+
+
+    const maps =
+        parseInt(newMaps, 10);
+
+    const portals =
+        parseInt(newPortals, 10);
+
+
+    if (
+        Number.isNaN(maps) ||
+        Number.isNaN(portals) ||
+        maps < 0 ||
+        portals < 0 ||
+        portals > maps
+    ) {
+
+        alert("Podaj poprawne wartości.");
+
+        return;
+    }
+
+
+    mapData[level].num_maps = maps;
+    mapData[level].num_portals = portals;
+
+    updateSummary();
 };
 
-// Load CSV
-document.getElementById('load-csv').onclick = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.csv';
 
-    fileInput.onchange = e => {
-        const file = e.target.files[0];
+/* --------------------------------
+   DELETE DATA
+-------------------------------- */
+
+document.getElementById("delete-data").onclick = () => {
+
+    const level = elements.mapLevel.value;
+
+    const confirmed =
+        confirm(
+            `Czy na pewno usunąć dane dla poziomu ${level}?`
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    mapData[level].num_maps = 0;
+    mapData[level].num_portals = 0;
+
+    updateSummary();
+};
+
+
+/* --------------------------------
+   CSV LOAD
+-------------------------------- */
+
+document.getElementById("load-csv").onclick = () => {
+
+    const input =
+        document.createElement("input");
+
+    input.type = "file";
+    input.accept = ".csv";
+
+
+    input.onchange = event => {
+
+        const file = event.target.files[0];
+
+        if (!file || typeof Papa === "undefined") {
+            return;
+        }
+
+
         Papa.parse(file, {
+
             header: true,
-            complete: results => {
-                results.data.forEach(entry => {
-                    const level = parseInt(entry.level);
-                    const num_maps = parseInt(entry.num_maps);
-                    const num_portals = parseInt(entry.num_portals);
-                    if (mapData[level]) {
-                        mapData[level].num_maps = num_maps;
-                        mapData[level].num_portals = num_portals;
+
+            skipEmptyLines: true,
+
+            complete: result => {
+
+                result.data.forEach(entry => {
+
+                    const level =
+                        parseInt(entry.level, 10);
+
+                    const maps =
+                        parseInt(entry.num_maps, 10);
+
+                    const portals =
+                        parseInt(entry.num_portals, 10);
+
+
+                    if (
+                        mapData[level] &&
+                        !Number.isNaN(maps) &&
+                        !Number.isNaN(portals)
+                    ) {
+
+                        mapData[level].num_maps =
+                            Math.max(0, maps);
+
+                        mapData[level].num_portals =
+                            Math.max(
+                                0,
+                                Math.min(portals, maps)
+                            );
                     }
                 });
+
                 updateSummary();
             }
         });
     };
 
-    fileInput.click();
+    input.click();
 };
 
-// Save CSV
-document.getElementById('save-csv').onclick = () => {
-    const rows = [['level', 'num_maps', 'num_portals']];
-    for (const level in mapData) {
-        const data = mapData[level];
-        rows.push([level, data.num_maps, data.num_portals]);
-    }
 
-    const csvContent = rows.map(e => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('href', url);
-    a.setAttribute('download', 'map_data.csv');
-    a.click();
+/* --------------------------------
+   CSV SAVE
+-------------------------------- */
+
+document.getElementById("save-csv").onclick = () => {
+
+    const rows = [
+        ["level", "num_maps", "num_portals"]
+    ];
+
+    Object.keys(mapData).forEach(level => {
+
+        rows.push([
+            level,
+            mapData[level].num_maps,
+            mapData[level].num_portals
+        ]);
+    });
+
+
+    const csv =
+        rows
+            .map(row => row.join(","))
+            .join("\n");
+
+
+    const blob =
+        new Blob(
+            [csv],
+            {
+                type: "text/csv;charset=utf-8;"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const link =
+        document.createElement("a");
+
+    link.href = url;
+    link.download = "map_data.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
 };
 
-// Load Excel
-document.getElementById('load-excel').onclick = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx';
-    
-    fileInput.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const dataRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-            // Clear existing map data before loading new data
-            for (const level in mapData) {
+/* --------------------------------
+   EXCEL LOAD
+-------------------------------- */
+
+document.getElementById("load-excel").onclick = () => {
+
+    const input =
+        document.createElement("input");
+
+    input.type = "file";
+    input.accept = ".xlsx";
+
+
+    input.onchange = event => {
+
+        const file = event.target.files[0];
+
+        if (!file || typeof XLSX === "undefined") {
+            return;
+        }
+
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload = e => {
+
+            const data =
+                new Uint8Array(e.target.result);
+
+            const workbook =
+                XLSX.read(
+                    data,
+                    { type: "array" }
+                );
+
+
+            const sheet =
+                workbook.Sheets[
+                    workbook.SheetNames[0]
+                    ];
+
+
+            const rows =
+                XLSX.utils.sheet_to_json(
+                    sheet,
+                    {
+                        header: 1
+                    }
+                );
+
+
+            Object.keys(mapData).forEach(level => {
+
                 mapData[level].num_maps = 0;
                 mapData[level].num_portals = 0;
-            }
 
-            dataRows.forEach(row => {
-                const level = parseInt(row[0]);
-                const num_maps = parseInt(row[1]);
-                const num_portals = parseInt(row[2]);
-                if (mapData[level]) {
-                    mapData[level].num_maps = num_maps;
-                    mapData[level].num_portals = num_portals;
+            });
+
+
+            rows.forEach(row => {
+
+                const level =
+                    parseInt(row[0], 10);
+
+                const maps =
+                    parseInt(row[1], 10);
+
+                const portals =
+                    parseInt(row[2], 10);
+
+
+                if (
+                    mapData[level] &&
+                    !Number.isNaN(maps) &&
+                    !Number.isNaN(portals)
+                ) {
+
+                    mapData[level].num_maps =
+                        Math.max(0, maps);
+
+                    mapData[level].num_portals =
+                        Math.max(
+                            0,
+                            Math.min(portals, maps)
+                        );
                 }
             });
+
+
             updateSummary();
         };
+
+
         reader.readAsArrayBuffer(file);
     };
 
-    fileInput.click();
+    input.click();
 };
 
-// Save Excel
-document.getElementById('save-excel').onclick = () => {
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(
-        Object.keys(mapData).map(level => ({
-            level: level,
-            num_maps: mapData[level].num_maps,
-            num_portals: mapData[level].num_portals
-        }))
-    );
 
-    XLSX.utils.book_append_sheet(wb, ws, 'MapData');
-    XLSX.writeFile(wb, 'map_data.xlsx');
+/* --------------------------------
+   EXCEL SAVE
+-------------------------------- */
+
+document.getElementById("save-excel").onclick = () => {
+
+    if (typeof XLSX === "undefined") {
+
+        alert(
+            "Biblioteka Excel nie została załadowana."
+        );
+
+        return;
+    }
+
+
+    const workbook =
+        XLSX.utils.book_new();
+
+
+    const worksheet =
+        XLSX.utils.json_to_sheet(
+
+            Object.keys(mapData).map(level => ({
+                level,
+                num_maps:
+                mapData[level].num_maps,
+                num_portals:
+                mapData[level].num_portals
+            }))
+
+        );
+
+    // Przekazujemy skoroszyt, arkusz oraz jego nazwę
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Map Data");
+
+    // Generujemy i pobieramy plik .xlsx
+    XLSX.writeFile(workbook, "map_data.xlsx");
 };
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then((registration) => {
-            console.log('Service Worker registered with scope:', registration.scope);
-        }).catch((error) => {
-            console.log('Service Worker registration failed:', error);
-        });
-    });
-}
 
-// Initialize default values and language
-changeLanguage('PL'); // Set initial language
-updateSummary();
+
+/* --------------------------------
+   INIT / EVENTS
+-------------------------------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Utworzenie wykresu Chart.js
+    createChart();
+
+    // Inicjalizacja podsumowania, wykresu oraz tabeli startowymi danymi
+    updateSummary();
+
+    // Nasłuchiwanie zmiany języka
+    elements.language.onchange = (e) => {
+        changeLanguage(e.target.value);
+    };
+});

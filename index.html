@@ -3,28 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="manifest" href="manifest.json">
+
     <title>FFXIV Map Tracker</title>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-    <div class="container">
-        <div class="menu">
-            <img src="https://img2.finalfantasyxiv.com/c/S3a_823c68e13683a115b4df62bfab74d24b_00_64x64.png" alt="Game Logo" class="logo">
-            <label for="language">Wybór języka:</label>
+
+<div class="page-background"></div>
+
+<div class="container">
+
+    <aside class="menu">
+
+        <div class="brand">
+            <img
+                    src="https://img2.finalfantasyxiv.com/c/S3a_823c68e13683a115b4df62bfab74d24b_00_64x64.png"
+                    alt="FFXIV"
+                    class="logo"
+            >
+
+            <div>
+                <div class="brand-title">FFXIV</div>
+                <div class="brand-subtitle">MAP TRACKER</div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+
+            <label for="language">Wybór języka</label>
             <select id="language">
                 <option value="PL">PL</option>
                 <option value="ENG">ENG</option>
                 <option value="FR">FR</option>
             </select>
-            
-            <label for="calendar">Wybierz datę:</label>
+
+            <label for="calendar">Wybierz datę</label>
             <input type="date" id="calendar">
-            
-            <label for="map-level">Poziom Mapy:</label>
+
+            <label for="map-level">Poziom mapy</label>
             <select id="map-level">
                 <option value="70">70</option>
                 <option value="80">80</option>
@@ -32,47 +56,173 @@
                 <option value="100">100</option>
             </select>
 
-            <label for="num-maps">Liczba Map:</label>
+            <label for="num-maps">Liczba map</label>
             <input type="number" id="num-maps" value="0" min="0">
 
-            <label for="num-portals">Liczba Portali:</label>
+            <label for="num-portals">Liczba portali</label>
             <input type="number" id="num-portals" value="0" min="0">
 
-            <button id="add-data">Dodaj Dane</button>
-            <button id="edit-data">Edytuj Dane</button>
-            <button id="delete-data">Usuń Wybrane Dane</button>
-            <button id="load-csv">Załaduj CSV</button>
-            <button id="save-csv">Zapisz jako CSV</button>
-            <button id="load-excel">Załaduj Excel</button>
-            <button id="save-excel">Zapisz jako Excel</button>
         </div>
 
-        <div class="main-content">
-            <h1 id="main-title">FFXIV Map Tracker</h1>
+        <div class="menu-section actions">
 
-            <div id="summary" class="summary-center">
-                <h2 id="summary-title">Podsumowanie</h2>
-                <p id="summary-maps">Razem Mapy: <span id="total-maps">0</span></p>
-                <p id="summary-portals">Razem Portale: <span id="total-portals">0</span></p>
-                <p id="summary-without-portals">Mapy bez Portali: <span id="maps-without-portals">0</span></p>
-                <p id="summary-percentage">Procent Map Bez Portali: <span id="percentage-without-portals">0%</span></p>
+            <button id="add-data" class="primary">
+                Dodaj dane
+            </button>
+
+            <button id="edit-data">
+                Edytuj dane
+            </button>
+
+            <button id="delete-data" class="danger">
+                Usuń wybrane dane
+            </button>
+
+            <div class="separator"></div>
+
+            <button id="load-csv">
+                Załaduj CSV
+            </button>
+
+            <button id="save-csv">
+                Zapisz jako CSV
+            </button>
+
+            <button id="load-excel">
+                Załaduj Excel
+            </button>
+
+            <button id="save-excel">
+                Zapisz jako Excel
+            </button>
+
+        </div>
+
+        <div class="menu-footer">
+            <span>FFXIV Map Tracker</span>
+            <span>For Eorzea ✦</span>
+        </div>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <header class="page-header">
+
+            <div>
+                <div class="eyebrow">ADVENTURER'S RECORD</div>
+                <h1 id="main-title">FFXIV Map Tracker</h1>
+                <p class="header-description">
+                    Śledź mapy, portale i postęp swoich treasure runs.
+                </p>
             </div>
 
-            <canvas id="charts" width="400" height="200"></canvas>
-            <table id="data-table">
-                <thead>
-                    <tr>
-                        <th id="table-header-level">Poziom Mapy</th>
-                        <th id="table-header-maps">Liczba Map</th>
-                        <th id="table-header-portals">Liczba Portali</th>
-                        <th id="table-header-percentage">Procent Map bez Portali</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+            <div class="crystal">
+                ✦
+            </div>
 
-    <script src="app.js"></script>
+        </header>
+
+
+        <section id="summary" class="summary-grid">
+
+            <div class="stat-card">
+                <div class="stat-icon">◈</div>
+                <div>
+                    <span class="stat-label" id="summary-maps-label">
+                        Razem mapy
+                    </span>
+                    <strong id="total-maps">0</strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">◇</div>
+                <div>
+                    <span class="stat-label" id="summary-portals-label">
+                        Razem portale
+                    </span>
+                    <strong id="total-portals">0</strong>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">◌</div>
+                <div>
+                    <span class="stat-label" id="summary-without-portals-label">
+                        Mapy bez portali
+                    </span>
+                    <strong id="maps-without-portals">0</strong>
+                </div>
+            </div>
+
+            <div class="stat-card accent">
+                <div class="stat-icon">%</div>
+                <div>
+                    <span class="stat-label" id="summary-percentage-label">
+                        Bez portali
+                    </span>
+                    <strong id="percentage-without-portals">0%</strong>
+                </div>
+            </div>
+
+        </section>
+
+
+        <section class="panel chart-panel">
+
+            <div class="panel-header">
+                <div>
+                    <span class="eyebrow">STATISTICS</span>
+                    <h2>Map overview</h2>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="charts"></canvas>
+            </div>
+
+        </section>
+
+
+        <section class="panel">
+
+            <div class="panel-header">
+                <div>
+                    <span class="eyebrow">DATA</span>
+                    <h2>Poziomy map</h2>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+
+                <table id="data-table">
+
+                    <thead>
+                    <tr>
+                        <th id="table-header-level">Poziom mapy</th>
+                        <th id="table-header-maps">Liczba map</th>
+                        <th id="table-header-portals">Liczba portali</th>
+                        <th id="table-header-percentage">
+                            Procent bez portali
+                        </th>
+                    </tr>
+                    </thead>
+
+                    <tbody></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="app.js"></script>
+
 </body>
 </html>
