@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFXIV Map Tracker</title>
 
-    <link rel="stylesheet" href="./styles.css?v=3">
-
+    <link rel="stylesheet" href="styles.css?v=4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -14,24 +13,21 @@
 </head>
 <body>
 <div class="app-container">
+    <!-- PANEL BOCZNY (SIDEBAR) -->
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-header">
-                <div>
-                    <span class="sub-title" data-i18n="journalTitle">ADVENTURER'S JOURNAL</span>
-                    <h1>FFXIV Map Tracker</h1>
-                </div>
-                <button id="toggleOverlayBtn" class="btn-overlay">
-                    <i class="fas fa-expand"></i> <span data-i18n="overlayBtn">Overlay Mode</span>
-                </button>
-            </div>
+            <span class="sub-title" data-i18n="journalTitle">ADVENTURER'S JOURNAL</span>
+            <h1>FFXIV Map Tracker</h1>
+            <button id="toggleOverlayBtn" class="btn-overlay">
+                <i class="fas fa-expand"></i> <span data-i18n="overlayBtn">Overlay Mode</span>
+            </button>
             <p class="description" data-i18n="appDescription">
                 Track maps, portals, completed dungeons, and Gil profits.
             </p>
         </div>
 
-        <!-- Wybór języka jako zwykłe pole formularza (zamiast wielkiego bloku) -->
-        <div class="form-group" style="margin-bottom: 1.5rem;">
+        <!-- Wybór języka -->
+        <div class="form-group lang-group">
             <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Language / Język</label>
             <select id="languageSelect" class="form-control">
                 <option value="pl">Polski</option>
@@ -40,26 +36,27 @@
             </select>
         </div>
 
-        <!-- Karty ze statystykami powracają do swojej oryginalnej siatki -->
+        <!-- Karty Podsumowania (2x2) -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-label" data-i18n="totalMaps">Total Maps</span>
+                <span class="stat-label" data-i18n="totalMaps">TOTAL MAPS</span>
                 <span id="statTotalMaps" class="stat-value">0 (Portal: 0%)</span>
             </div>
             <div class="stat-card">
-                <span class="stat-label" data-i18n="totalPortals">Total Portals</span>
+                <span class="stat-label" data-i18n="totalPortals">TOTAL PORTALS</span>
                 <span id="statTotalPortals" class="stat-value">0</span>
             </div>
             <div class="stat-card">
-                <span class="stat-label" data-i18n="completedDungeons">Completed Dungeons</span>
+                <span class="stat-label" data-i18n="completedDungeons">COMPLETED DUNGEONS</span>
                 <span id="statCompletedDungeons" class="stat-value">0 (Clear: 0%)</span>
             </div>
             <div class="stat-card gold">
-                <span class="stat-label" data-i18n="totalGil">Total Gil</span>
+                <span class="stat-label" data-i18n="totalGil">TOTAL GIL</span>
                 <span id="statTotalGil" class="stat-value">0 Gil</span>
             </div>
         </div>
 
+        <!-- Formularz wprowadzania danych -->
         <form id="entryForm" class="entry-form">
             <div class="form-group">
                 <label for="entryDate" data-i18n="selectDate">Select Date</label>
@@ -101,6 +98,7 @@
         </form>
     </aside>
 
+    <!-- GŁÓWNY PANEL Z WYKRESAMI I TABELĄ -->
     <main class="content-area">
         <section class="section-container">
             <div class="section-header">
@@ -108,12 +106,12 @@
                 <h2 data-i18n="statsTitle">Overview of Gains & Metrics</h2>
             </div>
 
-            <!-- Podział na 2 przejrzyste wykresy: Aktywność map per poziom oraz Zyski Gil -->
+            <!-- Sekcja z dwoma wykresami (Poziomy map oraz Zysk Gil) -->
             <div class="charts-wrapper">
-                <div class="chart-container">
+                <div class="chart-box">
                     <canvas id="mapsChart"></canvas>
                 </div>
-                <div class="chart-container">
+                <div class="chart-box">
                     <canvas id="gilChart"></canvas>
                 </div>
             </div>
@@ -147,10 +145,10 @@
     </main>
 </div>
 
-<script src="js/translations.js?v=3"></script>
-<script src="js/mapsData.js?v=3"></script>
-<script src="js/storage.js?v=3"></script>
-<script src="js/calculations.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/translations.js?v=4"></script>
+<script src="js/mapsData.js?v=4"></script>
+<script src="js/storage.js?v=4"></script>
+<script src="js/calculations.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>
