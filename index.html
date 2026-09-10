@@ -5,30 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFXIV Map Tracker</title>
 
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+<!-- Przycisk powrotu widoczny wyłącznie w trybie Overlay Mode -->
+<button id="exitOverlayBtn" class="btn-exit-overlay hidden">
+    <i class="fas fa-compress"></i> <span data-i18n="exitOverlay">Wyjdź z Overlay Mode</span>
+</button>
+
 <div class="app-container">
     <!-- PANEL BOCZNY (SIDEBAR) -->
     <aside class="sidebar">
         <div class="brand">
-            <span class="sub-title" data-i18n="journalTitle">ADVENTURER'S JOURNAL</span>
-            <h1>FFXIV Map Tracker</h1>
-            <button id="toggleOverlayBtn" class="btn-overlay">
-                <i class="fas fa-expand"></i> <span data-i18n="overlayBtn">Overlay Mode</span>
-            </button>
+            <div class="brand-header">
+                <div>
+                    <span class="sub-title" data-i18n="journalTitle">DZIENNIK POSZUKIWACZA PRZYGÓD</span>
+                    <h1>FFXIV Map Tracker</h1>
+                </div>
+                <button id="toggleOverlayBtn" class="btn-overlay">
+                    <i class="fas fa-expand"></i> <span data-i18n="overlayBtn">Tryb Overlay</span>
+                </button>
+            </div>
             <p class="description" data-i18n="appDescription">
-                Track maps, portals, completed dungeons, and Gil profits.
+                Śledź mapy, portale, ukończone lochy i zysk w Gil.
             </p>
         </div>
 
         <!-- Wybór języka -->
         <div class="form-group lang-group">
-            <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Language / Język</label>
+            <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Wybór języka</label>
             <select id="languageSelect" class="form-control">
                 <option value="pl">Polski</option>
                 <option value="en" selected>English</option>
@@ -36,22 +46,22 @@
             </select>
         </div>
 
-        <!-- Karty Podsumowania (2x2) -->
+        <!-- Karty Statystyk (Podsumowanie) -->
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="stat-label" data-i18n="totalMaps">TOTAL MAPS</span>
+                <span class="stat-label" data-i18n="totalMaps">Razem mapy</span>
                 <span id="statTotalMaps" class="stat-value">0 (Portal: 0%)</span>
             </div>
             <div class="stat-card">
-                <span class="stat-label" data-i18n="totalPortals">TOTAL PORTALS</span>
+                <span class="stat-label" data-i18n="totalPortals">Razem portale</span>
                 <span id="statTotalPortals" class="stat-value">0</span>
             </div>
             <div class="stat-card">
-                <span class="stat-label" data-i18n="completedDungeons">COMPLETED DUNGEONS</span>
+                <span class="stat-label" data-i18n="completedDungeons">Ukończone lochy</span>
                 <span id="statCompletedDungeons" class="stat-value">0 (Clear: 0%)</span>
             </div>
             <div class="stat-card gold">
-                <span class="stat-label" data-i18n="totalGil">TOTAL GIL</span>
+                <span class="stat-label" data-i18n="totalGil">Suma Gil</span>
                 <span id="statTotalGil" class="stat-value">0 Gil</span>
             </div>
         </div>
@@ -59,41 +69,41 @@
         <!-- Formularz wprowadzania danych -->
         <form id="entryForm" class="entry-form">
             <div class="form-group">
-                <label for="entryDate" data-i18n="selectDate">Select Date</label>
+                <label for="entryDate" data-i18n="selectDate">Wybierz datę</label>
                 <input type="date" id="entryDate" required class="form-control">
             </div>
 
             <div class="form-group">
-                <label for="mapSelect" data-i18n="mapType">Map</label>
+                <label for="mapSelect" data-i18n="mapType">Mapa</label>
                 <select id="mapSelect" class="form-control"></select>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="mapsCount" data-i18n="mapsCount">Map Count</label>
+                    <label for="mapsCount" data-i18n="mapsCount">Liczba map</label>
                     <input type="number" id="mapsCount" min="0" value="0" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label for="portalsCount" data-i18n="portalsCount">Portal Count</label>
+                    <label for="portalsCount" data-i18n="portalsCount">Liczba portali</label>
                     <input type="number" id="portalsCount" min="0" value="0" class="form-control">
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="clearsCount" data-i18n="clearsCount">Completed Dungeons (Clears)</label>
+                    <label for="clearsCount" data-i18n="clearsCount">Ukończone lochy (Clears)</label>
                     <input type="number" id="clearsCount" min="0" value="0" class="form-control">
                 </div>
                 <div class="form-group">
-                    <label for="gilEarned" data-i18n="gilEarned">Gil Earned</label>
+                    <label for="gilEarned" data-i18n="gilEarned">Zarobiony Gil</label>
                     <input type="number" id="gilEarned" min="0" value="0" class="form-control">
                 </div>
             </div>
 
             <div class="button-group">
-                <button type="submit" id="addBtn" class="btn btn-primary" data-i18n="addData">Add Data</button>
-                <button type="button" id="editBtn" class="btn btn-secondary hidden" data-i18n="editData">Save Changes</button>
-                <button type="button" id="deleteBtn" class="btn btn-danger hidden" data-i18n="deleteData">Delete Selected Data</button>
+                <button type="submit" id="addBtn" class="btn btn-primary" data-i18n="addData">Dodaj dane</button>
+                <button type="button" id="editBtn" class="btn btn-secondary hidden" data-i18n="editData">Zapisz zmiany</button>
+                <button type="button" id="deleteBtn" class="btn btn-danger hidden" data-i18n="deleteData">Usuń wybrane dane</button>
             </div>
         </form>
     </aside>
@@ -102,11 +112,11 @@
     <main class="content-area">
         <section class="section-container">
             <div class="section-header">
-                <span class="section-subtitle" data-i18n="statsSubtitle">STATISTICS</span>
-                <h2 data-i18n="statsTitle">Overview of Gains & Metrics</h2>
+                <span class="section-subtitle" data-i18n="statsSubtitle">STATYSTYKI</span>
+                <h2 data-i18n="statsTitle">Przegląd zysków i wskaźników</h2>
             </div>
 
-            <!-- Sekcja z dwoma wykresami (Poziomy map oraz Zysk Gil) -->
+            <!-- Dwa wykresy w siatce -->
             <div class="charts-wrapper">
                 <div class="chart-box">
                     <canvas id="mapsChart"></canvas>
@@ -119,23 +129,23 @@
 
         <section class="section-container">
             <div class="section-header">
-                <span class="section-subtitle" data-i18n="dataSubtitle">DATA</span>
-                <h2 data-i18n="dataTitle">Map & Profit Details</h2>
+                <span class="section-subtitle" data-i18n="dataSubtitle">DANE</span>
+                <h2 data-i18n="dataTitle">Szczegóły map i zysku</h2>
             </div>
 
             <div class="table-responsive">
                 <table class="data-table">
                     <thead>
                     <tr>
-                        <th data-i18n="thMapName">Map Name</th>
-                        <th data-i18n="thType">Type</th>
-                        <th data-i18n="thLevel">Level</th>
-                        <th data-i18n="thMaps">Maps</th>
-                        <th data-i18n="thPortals">Portals</th>
+                        <th data-i18n="thMapName">Nazwa mapy</th>
+                        <th data-i18n="thType">Typ</th>
+                        <th data-i18n="thLevel">Poziom</th>
+                        <th data-i18n="thMaps">Mapy</th>
+                        <th data-i18n="thPortals">Portale</th>
                         <th data-i18n="thClears">Clears</th>
-                        <th data-i18n="thTotalGil">Total Gil</th>
-                        <th data-i18n="thAvgGil">Avg. Gil / Map</th>
-                        <th data-i18n="thQuickActions">+1 Quick Actions</th>
+                        <th data-i18n="thTotalGil">Suma Gil</th>
+                        <th data-i18n="thAvgGil">Śr. Gil / Mapa</th>
+                        <th data-i18n="thQuickActions">+1 Szybkie akcje</th>
                     </tr>
                     </thead>
                     <tbody id="mapTableBody"></tbody>
@@ -145,10 +155,10 @@
     </main>
 </div>
 
-<script src="js/translations.js?v=4"></script>
-<script src="js/mapsData.js?v=4"></script>
-<script src="js/storage.js?v=4"></script>
-<script src="js/calculations.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/translations.js?v=5"></script>
+<script src="js/mapsData.js?v=5"></script>
+<script src="js/storage.js?v=5"></script>
+<script src="js/calculations.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

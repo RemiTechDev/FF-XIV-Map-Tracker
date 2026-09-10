@@ -1,35 +1,34 @@
-export function calculateTotals(mapData) {
-    let totalMaps = 0;
-    let totalPartyMaps = 0;
-    let totalPortals = 0;
-    let totalClears = 0;
-    let totalGil = 0;
+const Calculations = {
+    computeStats(data) {
+        if (typeof MAPS_DATA === "undefined") return { totalMaps: 0, totalPortals: 0, totalClears: 0, totalGil: 0, mapDetails: [] };
 
-    Object.values(mapData).forEach(entry => {
-        const maps = Number(entry.num_maps) || 0;
-        const portals = Number(entry.num_portals) || 0;
-        const clears = Number(entry.num_clears) || 0;
-        const gil = Number(entry.earned_gil) || 0;
+        const mapDetails = MAPS_DATA.map(m => {
+            const entries = data.filter(d => d.mapId === m.id);
+            const maps = entries.reduce((acc, curr) => acc + Number(curr.mapsCount || 0), 0);
+            const portals = entries.reduce((acc, curr) => acc + Number(curr.portalsCount || 0), 0);
+            const clears = entries.reduce((acc, curr) => acc + Number(curr.clearsCount || 0), 0);
+            const gil = entries.reduce((acc, curr) => acc + Number(curr.gilEarned || 0), 0);
 
-        totalMaps += maps;
-        totalPortals += portals;
-        totalClears += clears;
-        totalGil += gil;
+            return {
+                ...m,
+                maps,
+                portals,
+                clears,
+                gil
+            };
+        });
 
-        if (entry.isParty) {
-            totalPartyMaps += maps;
-        }
-    });
+        const totalMaps = mapDetails.reduce((acc, m) => acc + m.maps, 0);
+        const totalPortals = mapDetails.reduce((acc, m) => acc + m.portals, 0);
+        const totalClears = mapDetails.reduce((acc, m) => acc + m.clears, 0);
+        const totalGil = mapDetails.reduce((acc, m) => acc + m.gil, 0);
 
-    const portalRate = totalPartyMaps > 0 ? ((totalPortals / totalPartyMaps) * 100).toFixed(1) : "0.0";
-    const clearRate = totalPortals > 0 ? ((totalClears / totalPortals) * 100).toFixed(1) : "0.0";
-
-    return { totalMaps, totalPartyMaps, totalPortals, totalClears, totalGil, portalRate, clearRate };
-}
-
-export function calculateAvgGil(earnedGil, numMaps) {
-    const maps = Number(numMaps) || 0;
-    const gil = Number(earnedGil) || 0;
-    if (maps === 0) return 0;
-    return Math.round(gil / maps);
-}
+        return {
+            totalMaps,
+            totalPortals,
+            totalClears,
+            totalGil,
+            mapDetails
+        };
+    }
+};
