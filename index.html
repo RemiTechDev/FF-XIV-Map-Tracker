@@ -3,226 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="manifest" href="manifest.json">
-
     <title>FFXIV Map Tracker</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#12161f">
+    <!-- Biblioteki zewnętrzne: Chart.js, PapaParse, XLSX -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
-
 <body>
-
-<div class="page-background"></div>
-
 <div class="container">
-
+    <!-- Pasek boczny / Formularz -->
     <aside class="menu">
-
-        <div class="brand">
-            <img
-                    src="https://img2.finalfantasyxiv.com/c/S3a_823c68e13683a115b4df62bfab74d24b_00_64x64.png"
-                    alt="FFXIV"
-                    class="logo"
-            >
-
-            <div>
-                <div class="brand-title">FFXIV</div>
-                <div class="brand-subtitle">MAP TRACKER</div>
-            </div>
-        </div>
-
-        <div class="menu-section">
-
-            <label for="language">Wybór języka</label>
-            <select id="language">
-                <option value="PL">PL</option>
-                <option value="ENG">ENG</option>
-                <option value="FR">FR</option>
-            </select>
-
-            <label for="calendar">Wybierz datę</label>
-            <input type="date" id="calendar">
-
-            <label for="map-level">Poziom mapy</label>
-            <select id="map-level">
-                <option value="70">70</option>
-                <option value="80">80</option>
-                <option value="90">90</option>
-                <option value="100">100</option>
-            </select>
-
-            <label for="num-maps">Liczba map</label>
-            <input type="number" id="num-maps" value="0" min="0">
-
-            <label for="num-portals">Liczba portali</label>
-            <input type="number" id="num-portals" value="0" min="0">
-
-        </div>
-
-        <div class="menu-section actions">
-
-            <button id="add-data" class="primary">
-                Dodaj dane
-            </button>
-
-            <button id="edit-data">
-                Edytuj dane
-            </button>
-
-            <button id="delete-data" class="danger">
-                Usuń wybrane dane
-            </button>
-
-            <div class="separator"></div>
-
-            <button id="load-csv">
-                Załaduj CSV
-            </button>
-
-            <button id="save-csv">
-                Zapisz jako CSV
-            </button>
-
-            <button id="load-excel">
-                Załaduj Excel
-            </button>
-
-            <button id="save-excel">
-                Zapisz jako Excel
-            </button>
-
-        </div>
-
-        <div class="menu-footer">
-            <span>FFXIV Map Tracker</span>
-            <span>For Eorzea ✦</span>
-        </div>
-
-    </aside>
-
-
-    <main class="main-content">
-
         <header class="page-header">
-
             <div>
-                <div class="eyebrow">ADVENTURER'S RECORD</div>
+                <div class="eyebrow" id="header-eyebrow">DZIENNIK POSZUKIWACZA PRZYGÓD</div>
                 <h1 id="main-title">FFXIV Map Tracker</h1>
-                <p class="header-description">
-                    Śledź mapy, portale i postęp swoich treasure runs.
-                </p>
+                <p class="header-description">Śledź mapy, portale, ukończone lochy i zysk w Gil.</p>
             </div>
-
-            <div class="crystal">
-                ✦
+            <div class="header-actions">
+                <button id="toggle-overlay-btn" class="compact-btn">📐 Tryb Overlay</button>
+                <div class="crystal">✦</div>
             </div>
-
         </header>
 
+        <!-- Podsumowanie szybkie -->
+        <div class="summary-cards">
+            <div class="card">
+                <span class="card-label" id="summary-maps-label">Razem mapy</span>
+                <span class="card-value" id="total-maps">0</span>
+            </div>
+            <div class="card">
+                <span class="card-label" id="summary-portals-label">Razem portale</span>
+                <span class="card-value" id="total-portals">0</span>
+            </div>
+            <div class="card">
+                <span class="card-label" id="summary-clears-label">Ukończone lochy</span>
+                <span class="card-value" id="total-clears">0</span>
+            </div>
+            <div class="card">
+                <span class="card-label" id="summary-gil-label">Suma Gil</span>
+                <span class="card-value" id="total-gil">0 Gil</span>
+            </div>
+        </div>
 
-        <section id="summary" class="summary-grid">
+        <!-- Formularz wprowadzania danych -->
+        <form id="tracker-form" onsubmit="return false;">
+            <div class="form-group">
+                <label for="language">Wybór języka</label>
+                <select id="language">
+                    <option value="PL" selected>Polski</option>
+                    <option value="ENG">English</option>
+                    <option value="FR">Français</option>
+                </select>
+            </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">◈</div>
-                <div>
-                    <span class="stat-label" id="summary-maps-label">
-                        Razem mapy
-                    </span>
-                    <strong id="total-maps">0</strong>
+            <div class="form-group">
+                <label for="calendar">Wybierz datę</label>
+                <input type="date" id="calendar">
+            </div>
+
+            <div class="form-group">
+                <label for="map-select">Mapa</label>
+                <select id="map-select"></select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="num-maps">Liczba map</label>
+                    <input type="number" id="num-maps" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="num-portals">Liczba portali</label>
+                    <input type="number" id="num-portals" min="0" value="0">
                 </div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">◇</div>
-                <div>
-                    <span class="stat-label" id="summary-portals-label">
-                        Razem portale
-                    </span>
-                    <strong id="total-portals">0</strong>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="num-clears">Ukończone lochy (Clears)</label>
+                    <input type="number" id="num-clears" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="earned-gil">Zarobiony Gil</label>
+                    <input type="number" id="earned-gil" min="0" step="1000" value="0">
                 </div>
             </div>
 
-            <div class="stat-card">
-                <div class="stat-icon">◌</div>
-                <div>
-                    <span class="stat-label" id="summary-without-portals-label">
-                        Mapy bez portali
-                    </span>
-                    <strong id="maps-without-portals">0</strong>
-                </div>
+            <div class="actions">
+                <button type="button" id="add-data" class="btn btn-primary">Dodaj dane</button>
+                <button type="button" id="edit-data" class="btn btn-secondary">Edytuj dane</button>
+                <button type="button" id="delete-data" class="btn btn-danger">Usuń wybrane dane</button>
+                <button type="button" id="reset-all" class="btn btn-outline">Wyczyść wszystko</button>
             </div>
+        </form>
 
-            <div class="stat-card accent">
-                <div class="stat-icon">%</div>
-                <div>
-                    <span class="stat-label" id="summary-percentage-label">
-                        Bez portali
-                    </span>
-                    <strong id="percentage-without-portals">0%</strong>
-                </div>
+        <footer class="menu-footer">
+            <div class="file-actions">
+                <button id="save-csv" class="btn-file">Zapisz jako CSV</button>
+                <button id="save-excel" class="btn-file">Zapisz jako Excel</button>
             </div>
+        </footer>
+    </aside>
 
-        </section>
-
-
-        <section class="panel chart-panel">
-
-            <div class="panel-header">
-                <div>
-                    <span class="eyebrow">STATISTICS</span>
-                    <h2>Map overview</h2>
-                </div>
+    <!-- Główny panel: Wykres i Tabela -->
+    <main class="content">
+        <section class="chart-panel">
+            <div class="section-header">
+                <span class="eyebrow" id="chart-eyebrow">STATYSTYKI</span>
+                <h2 id="chart-title">Przegląd zysków i wskaźników</h2>
             </div>
-
-            <div class="chart-wrapper">
+            <div class="chart-container">
                 <canvas id="charts"></canvas>
             </div>
-
         </section>
 
-
-        <section class="panel">
-
-            <div class="panel-header">
-                <div>
-                    <span class="eyebrow">DATA</span>
-                    <h2>Poziomy map</h2>
-                </div>
+        <section class="table-panel">
+            <div class="section-header">
+                <span class="eyebrow" id="table-eyebrow">DANE</span>
+                <h2 id="table-title">Szczegóły map i zysku</h2>
             </div>
-
             <div class="table-wrapper">
-
                 <table id="data-table">
-
                     <thead>
                     <tr>
-                        <th id="table-header-level">Poziom mapy</th>
-                        <th id="table-header-maps">Liczba map</th>
-                        <th id="table-header-portals">Liczba portali</th>
-                        <th id="table-header-percentage">
-                            Procent bez portali
-                        </th>
+                        <th id="th-name">Nazwa mapy</th>
+                        <th id="th-type">Typ</th>
+                        <th id="th-level">Poziom</th>
+                        <th id="th-maps">Mapy</th>
+                        <th id="th-portals">Portale</th>
+                        <th id="th-clears">Clears</th>
+                        <th id="th-gil">Suma Gil</th>
+                        <th id="th-avggil">Śr. Gil / Mapa</th>
+                        <th id="th-quick">+1 Szybkie akcje</th>
                     </tr>
                     </thead>
-
-                    <tbody></tbody>
-
+                    <tbody>
+                    <!-- Wiersze generowane dynamicznie przez JS -->
+                    </tbody>
                 </table>
-
             </div>
-
         </section>
-
     </main>
-
 </div>
 
-<script src="app.js"></script>
-
+<script type="module" src="js/app.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(console.error);
+    }
+</script>
 </body>
 </html>
