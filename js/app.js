@@ -53,7 +53,7 @@ function updateUI() {
 
     if (stats) {
         updateStatCards(stats);
-        updateTable(stats);
+        if (typeof updateTable === "function") updateTable(stats);
         updateCharts(stats);
     }
 }
@@ -72,61 +72,63 @@ function updateCharts(stats) {
     const langData = translations[currentLang] || translations['pl'];
     const activeStats = stats.mapDetails.filter(m => m.maps > 0);
 
-    const labels = activeStats.map(m => m.name);
+    const labels = activeStats.map(m => `[Lv.${m.level}] ${m.name}`);
     const mapsData = activeStats.map(m => m.maps);
     const portalsData = activeStats.map(m => m.portals);
+    const clearsData = activeStats.map(m => m.clears);
     const gilData = activeStats.map(m => m.gil);
 
-    // Wykres 1: Aktywność Map i Portali
+    // Wykres 1: Statystyki Map, Portali i Clears według poziomu
     const ctxMaps = document.getElementById('mapsChart')?.getContext('2d');
     if (ctxMaps) {
         if (mapsChartInstance) mapsChartInstance.destroy();
         mapsChartInstance = new Chart(ctxMaps, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: labels.length ? labels : ['Brak danych'],
                 datasets: [
-                    { label: langData.thMaps || 'Mapy', data: mapsData, backgroundColor: '#d4af37' },
-                    { label: langData.thPortals || 'Portale', data: portalsData, backgroundColor: '#4a90e2' }
+                    { label: langData.thMaps || 'Mapy', data: mapsData.length ? mapsData : [0], backgroundColor: '#e2b13c' },
+                    { label: langData.thPortals || 'Portale', data: portalsData.length ? portalsData : [0], backgroundColor: '#3498db' },
+                    { label: langData.thClears || 'Clears', data: clearsData.length ? clearsData : [0], backgroundColor: '#2ecc71' }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: langData.chartMapsTitle || 'Ilość map i portali', color: '#f0f0f0' },
+                    title: { display: true, text: langData.chartMapsTitle || 'Aktywność Map, Portali i Ukończonych Lochów', color: '#f0f0f0', font: { size: 14 } },
                     legend: { labels: { color: '#ccc' } }
                 },
                 scales: {
-                    x: { ticks: { color: '#aaa' }, grid: { color: '#333' } },
-                    y: { ticks: { color: '#aaa' }, grid: { color: '#333' }, beginAtZero: true }
+                    x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
                 }
             }
         });
     }
 
-    // Wykres 2: Zysk Gil
+    // Wykres 2: Zarobek w Gil
     const ctxGil = document.getElementById('gilChart')?.getContext('2d');
     if (ctxGil) {
         if (gilChartInstance) gilChartInstance.destroy();
         gilChartInstance = new Chart(ctxGil, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: labels.length ? labels : ['Brak danych'],
                 datasets: [
-                    { label: 'Gil', data: gilData, backgroundColor: '#50e3c2' }
+                    { label: 'Suma Gil', data: gilData.length ? gilData : [0], backgroundColor: '#9b59b6' }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: langData.chartGilTitle || 'Zysk Gil', color: '#f0f0f0' },
+                    title: { display: true, text: langData.chartGilTitle || 'Zarobek Gil według rodzaju mapy', color: '#f0f0f0', font: { size: 14 } },
                     legend: { labels: { color: '#ccc' } }
                 },
                 scales: {
-                    x: { ticks: { color: '#aaa' }, grid: { color: '#333' } },
-                    y: { ticks: { color: '#aaa' }, grid: { color: '#333' }, beginAtZero: true }
+                    x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
                 }
             }
         });
