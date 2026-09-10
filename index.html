@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFXIV Map Tracker — RemiTech</title>
-    <link rel="stylesheet" href="style.css">
+
+    <!-- Styl powiązany bezpośrednio -->
+    <link rel="stylesheet" href="./style.css">
+
+    <!-- Zewnętrzne biblioteki (Chart.js, PapaParse, XLSX, FontAwesome) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -29,7 +33,7 @@
             </p>
         </div>
 
-        <!-- SEKCJA JĘZYKA (PRZENIESIONA NA GÓRĘ) -->
+        <!-- SEKCJA JĘZYKA (NA SAMAJ GÓRZE) -->
         <div class="card language-card">
             <div class="form-group margin-0">
                 <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Wybór języka</label>
@@ -97,7 +101,7 @@
 
             <div class="button-group">
                 <button type="submit" id="addBtn" class="btn btn-primary" data-i18n="addData">Dodaj dane</button>
-                <button type="button" id="editBtn" class="btn btn-secondary hidden" data-i18n="editData">Edytuj dane</button>
+                <button type="button" id="editBtn" class="btn btn-secondary hidden" data-i18n="editData">Zapisz zmiany</button>
                 <button type="button" id="deleteBtn" class="btn btn-danger hidden" data-i18n="deleteData">Usuń wybrane dane</button>
             </div>
         </form>
