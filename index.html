@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFXIV Map Tracker — RemiTech</title>
 
-    <!-- Poprawna nazwa pliku ze stylami: styles.css -->
     <link rel="stylesheet" href="./styles.css">
 
-    <!-- Zewnętrzne biblioteki -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -16,7 +14,6 @@
 </head>
 <body>
 <div class="app-container">
-    <!-- LEWY PANEL BOCZNY -->
     <aside class="sidebar">
         <div class="brand">
             <div class="brand-header">
@@ -33,19 +30,17 @@
             </p>
         </div>
 
-        <!-- SEKCJA JĘZYKA (NA SAMEJ GÓRZE) -->
-        <div class="card language-card">
-            <div class="form-group margin-0">
-                <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Wybór języka</label>
-                <select id="languageSelect" class="form-control">
-                    <option value="pl">Polski</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                </select>
-            </div>
+        <!-- Wybór języka umieszczony na górze panelu bocznego -->
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label for="languageSelect" data-i18n="selectLanguage"><i class="fas fa-globe"></i> Wybór języka</label>
+            <select id="languageSelect" class="form-control">
+                <option value="pl">Polski</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+            </select>
         </div>
 
-        <!-- KARTY PODSUMOWANIA -->
+        <!-- Oryginalne karty podsumowania -->
         <div class="stats-grid">
             <div class="stat-card">
                 <span class="stat-label" data-i18n="totalMaps">Razem mapy</span>
@@ -65,7 +60,6 @@
             </div>
         </div>
 
-        <!-- FORMULARZ DANYCH -->
         <form id="entryForm" class="entry-form">
             <div class="form-group">
                 <label for="entryDate" data-i18n="selectDate">Wybierz datę</label>
@@ -107,18 +101,18 @@
         </form>
     </aside>
 
-    <!-- GŁÓWNA SEKCJA WIZUALIZACJI I TABELI -->
     <main class="content-area">
         <section class="section-container">
             <div class="section-header">
                 <span class="section-subtitle" data-i18n="statsSubtitle">STATYSTYKI</span>
                 <h2 data-i18n="statsTitle">Przegląd zysków i wskaźników</h2>
             </div>
-            <div class="charts-wrapper">
-                <div class="chart-box">
+            <!-- Zestaw dwóch osobnych, dopasowanych wykresów obok siebie -->
+            <div class="charts-wrapper" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="chart-box" style="position: relative; height: 320px;">
                     <canvas id="mapsChart"></canvas>
                 </div>
-                <div class="chart-box">
+                <div class="chart-box" style="position: relative; height: 320px;">
                     <canvas id="gilChart"></canvas>
                 </div>
             </div>
@@ -152,7 +146,6 @@
     </main>
 </div>
 
-<!-- Poprawione ścieżki do folderu js/ -->
 <script src="js/translations.js"></script>
 <script src="js/mapsData.js"></script>
 <script src="js/storage.js"></script>
