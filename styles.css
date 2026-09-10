@@ -1,291 +1,49 @@
-/* ==========================================
-   RESET & zmienne stylów
-   ========================================== */
-:root {
-    --bg-main: #0b0d12;
-    --bg-card: #151922;
-    --bg-card-hover: #1c222e;
-    --accent-gold: #d89b48;
-    --accent-gold-hover: #f0b05b;
-    --text-main: #dce4ef;
-    --text-muted: #8896a8;
-    --border-color: rgba(216, 155, 72, 0.2);
-    --danger-color: #d9534f;
-    --radius: 8px;
-    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-family: var(--font-family);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-}
-
-.container {
+/* Siatka dla Stat-Cards w Sidebarze */
+.stats-grid {
     display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 24px;
-    width: 100%;
-    max-width: 1400px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
-/* ==========================================
-   PASEK BOCZNY / MENU
-   ========================================== */
-.menu {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 24px;
+.stat-card {
+    background: #181b20;
+    border: 1px solid #2a2e37;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card.gold {
+    border-color: #d4af37;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #8a8d93;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-top: 4px;
+}
+
+/* Układ wykresów w głównej części */
+.charts-wrapper {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-}
-
-.eyebrow {
-    font-size: 0.7rem;
-    letter-spacing: 2px;
-    color: var(--accent-gold);
-    font-weight: bold;
-}
-
-h1, h2 {
-    color: #fff;
-    font-weight: 600;
-}
-
-.header-description {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-top: 4px;
-}
-
-.crystal {
-    color: var(--accent-gold);
-    font-size: 1.2rem;
-}
-
-/* Karty podsumowania */
-.summary-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.card {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 12px;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-}
-
-.card-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.card-value {
-    font-size: 1rem;
-    font-weight: bold;
-    color: var(--accent-gold);
-    margin-top: 4px;
-}
-
-/* Formularze */
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 12px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-input, select {
-    background: #0f1217;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-input:focus, select:focus {
-    outline: none;
-    border-color: var(--accent-gold);
-}
-
-/* Przyciski */
-.actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.btn {
-    padding: 10px;
-    border: none;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.btn-primary {
-    background: var(--accent-gold);
-    color: #000;
-}
-.btn-primary:hover { background: var(--accent-gold-hover); }
-
-.btn-secondary { background: #2a3240; color: #fff; }
-.btn-danger { background: var(--danger-color); color: #fff; }
-.btn-outline { background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); }
-
-.file-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.btn-file {
-    flex: 1;
-    background: #1a202c;
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    padding: 8px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.compact-btn {
-    background: rgba(216, 155, 72, 0.15);
-    border: 1px solid var(--accent-gold);
-    color: var(--accent-gold);
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-/* ==========================================
-   PANEL GŁÓWNY (WYKRES I TABELA)
-   ========================================== */
-.content {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-.chart-panel, .table-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-    padding: 24px;
-}
-
 .chart-container {
-    height: 250px;
     position: relative;
-    margin-top: 16px;
-}
-
-.table-wrapper {
-    overflow-x: auto;
-    margin-top: 16px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-    font-size: 0.85rem;
-}
-
-th, td {
-    padding: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-th {
-    color: var(--text-muted);
-    font-weight: 600;
-}
-
-tr:hover {
-    background: var(--bg-card-hover);
-}
-
-.quick-add {
-    background: #222936;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--accent-gold);
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 4px;
-    font-size: 0.75rem;
-}
-
-.quick-add:hover {
-    background: var(--accent-gold);
-    color: #000;
-}
-
-/* ==========================================
-   TRYB OVERLAY / COMPACT MODE
-   ========================================== */
-body.overlay-mode {
-    background: #0f1217;
-    padding: 10px;
-}
-
-body.overlay-mode .container {
-    max-width: 380px;
-    grid-template-columns: 1fr;
-    gap: 12px;
-}
-
-body.overlay-mode .chart-panel,
-body.overlay-mode .header-description,
-body.overlay-mode .menu-footer,
-body.overlay-mode .eyebrow {
-    display: none !important;
-}
-
-body.overlay-mode table th:nth-child(2),
-body.overlay-mode table td:nth-child(2),
-body.overlay-mode table th:nth-child(3),
-body.overlay-mode table td:nth-child(3),
-body.overlay-mode table th:nth-child(8),
-body.overlay-mode table td:nth-child(8) {
-    display: none;
+    height: 320px;
+    background: #181b20;
+    border: 1px solid #2a2e37;
+    border-radius: 8px;
+    padding: 15px;
 }

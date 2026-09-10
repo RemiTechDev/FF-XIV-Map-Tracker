@@ -1,4 +1,4 @@
-let currentLang = 'pl';
+let currentLang = 'en';
 let mapsChartInstance = null;
 let gilChartInstance = null;
 
@@ -29,7 +29,7 @@ function setupLanguageSelector() {
 }
 
 function applyTranslations() {
-    const langData = translations[currentLang] || translations['pl'];
+    const langData = (typeof translations !== "undefined" && translations[currentLang]) ? translations[currentLang] : {};
     document.querySelectorAll("[data-i18n]").forEach(el => {
         const key = el.getAttribute("data-i18n");
         if (langData[key]) {
@@ -69,66 +69,66 @@ function updateStatCards(stats) {
 }
 
 function updateCharts(stats) {
-    const langData = translations[currentLang] || translations['pl'];
-    const activeStats = stats.mapDetails.filter(m => m.maps > 0);
+    const activeStats = stats.mapDetails ? stats.mapDetails.filter(m => m.maps > 0) : [];
 
-    const labels = activeStats.map(m => `[Lv.${m.level}] ${m.name}`);
+    // Etykiety zawierające poziom (Level) oraz nazwę mapy
+    const labels = activeStats.map(m => `[Lv.${m.level || '?'}] ${m.name}`);
     const mapsData = activeStats.map(m => m.maps);
     const portalsData = activeStats.map(m => m.portals);
     const clearsData = activeStats.map(m => m.clears);
     const gilData = activeStats.map(m => m.gil);
 
-    // Wykres 1: Statystyki Map, Portali i Clears według poziomu
+    // Wykres 1: Statystyki Map, Portali i Clears per Poziom / Mapa
     const ctxMaps = document.getElementById('mapsChart')?.getContext('2d');
     if (ctxMaps) {
         if (mapsChartInstance) mapsChartInstance.destroy();
         mapsChartInstance = new Chart(ctxMaps, {
             type: 'bar',
             data: {
-                labels: labels.length ? labels : ['Brak danych'],
+                labels: labels.length ? labels : ['No Data'],
                 datasets: [
-                    { label: langData.thMaps || 'Mapy', data: mapsData.length ? mapsData : [0], backgroundColor: '#e2b13c' },
-                    { label: langData.thPortals || 'Portale', data: portalsData.length ? portalsData : [0], backgroundColor: '#3498db' },
-                    { label: langData.thClears || 'Clears', data: clearsData.length ? clearsData : [0], backgroundColor: '#2ecc71' }
+                    { label: 'Maps', data: mapsData.length ? mapsData : [0], backgroundColor: '#d4af37' },
+                    { label: 'Portals', data: portalsData.length ? portalsData : [0], backgroundColor: '#4a90e2' },
+                    { label: 'Clears', data: clearsData.length ? clearsData : [0], backgroundColor: '#2ecc71' }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: langData.chartMapsTitle || 'Aktywność Map, Portali i Ukończonych Lochów', color: '#f0f0f0', font: { size: 14 } },
+                    title: { display: true, text: 'Activity Breakdown by Map Level', color: '#f0f0f0', font: { size: 14 } },
                     legend: { labels: { color: '#ccc' } }
                 },
                 scales: {
-                    x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+                    x: { ticks: { color: '#aaa' }, grid: { color: '#2a2e37' } },
+                    y: { ticks: { color: '#aaa' }, grid: { color: '#2a2e37' }, beginAtZero: true }
                 }
             }
         });
     }
 
-    // Wykres 2: Zarobek w Gil
+    // Wykres 2: Profit Gil per Poziom / Mapa
     const ctxGil = document.getElementById('gilChart')?.getContext('2d');
     if (ctxGil) {
         if (gilChartInstance) gilChartInstance.destroy();
         gilChartInstance = new Chart(ctxGil, {
             type: 'bar',
             data: {
-                labels: labels.length ? labels : ['Brak danych'],
+                labels: labels.length ? labels : ['No Data'],
                 datasets: [
-                    { label: 'Suma Gil', data: gilData.length ? gilData : [0], backgroundColor: '#9b59b6' }
+                    { label: 'Gil Profit', data: gilData.length ? gilData : [0], backgroundColor: '#e67e22' }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: langData.chartGilTitle || 'Zarobek Gil według rodzaju mapy', color: '#f0f0f0', font: { size: 14 } },
+                    title: { display: true, text: 'Total Gil Profit by Map Level', color: '#f0f0f0', font: { size: 14 } },
                     legend: { labels: { color: '#ccc' } }
                 },
                 scales: {
-                    x: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    y: { ticks: { color: '#aaa' }, grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+                    x: { ticks: { color: '#aaa' }, grid: { color: '#2a2e37' } },
+                    y: { ticks: { color: '#aaa' }, grid: { color: '#2a2e37' }, beginAtZero: true }
                 }
             }
         });
