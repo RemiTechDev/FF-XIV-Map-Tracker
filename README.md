@@ -1,14 +1,9 @@
 # FFXIV Map Tracker
 
-> **Track. Analyze. Profit.**
 
 <p align="center">
-  <a href="https://remitechdev.github.io/FF-XIV-Map-Tracker/">
-    <img src="assets/readme/ffxiv-map-tracker-banner.png" alt="FFXIV Map Tracker — Treasure Hunt statistics and analytics" width="100%">
-  </a>
+  <img src="assets/MapTracker.jpeg" alt="FFXIV Map Tracker Banner" width="100%">
 </p>
-
-A local-first web application for tracking **Final Fantasy XIV Treasure Map** sessions, treasure dungeon portals, dungeon clears, map purchase costs, and Gil profitability.
 
 **Current version:** `v0.4.0`a
 
