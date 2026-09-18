@@ -3,155 +3,647 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b0f16">
+    <meta name="description" content="FFXIV Treasure Map tracker with portal, clear and Gil statistics.">
     <title>FFXIV Map Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#12161f">
-    <!-- Biblioteki zewnętrzne: Chart.js, PapaParse, XLSX -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="icon" href="assets/icons/icon-192.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
-<div class="container">
-    <!-- Pasek boczny / Formularz -->
-    <aside class="menu">
-        <header class="page-header">
-            <div>
-                <div class="eyebrow" id="header-eyebrow">DZIENNIK POSZUKIWACZA PRZYGÓD</div>
-                <h1 id="main-title">FFXIV Map Tracker</h1>
-                <p class="header-description">Śledź mapy, portale, ukończone lochy i zysk w Gil.</p>
-            </div>
-            <div class="header-actions">
-                <button id="toggle-overlay-btn" class="compact-btn">📐 Tryb Overlay</button>
-                <div class="crystal">✦</div>
-            </div>
-        </header>
 
-        <!-- Podsumowanie szybkie -->
-        <div class="summary-cards">
-            <div class="card">
-                <span class="card-label" id="summary-maps-label">Razem mapy</span>
-                <span class="card-value" id="total-maps">0</span>
-            </div>
-            <div class="card">
-                <span class="card-label" id="summary-portals-label">Razem portale</span>
-                <span class="card-value" id="total-portals">0</span>
-            </div>
-            <div class="card">
-                <span class="card-label" id="summary-clears-label">Ukończone lochy</span>
-                <span class="card-value" id="total-clears">0</span>
-            </div>
-            <div class="card">
-                <span class="card-label" id="summary-gil-label">Suma Gil</span>
-                <span class="card-value" id="total-gil">0 Gil</span>
+<!-- Main application shell -->
+<div class="app-shell">
+    <!-- ======================================================================
+         Sidebar: branding, language and main navigation
+         ====================================================================== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">✦</div>
+            <div class="brand-copy">
+                <span class="eyebrow">REMI<span>TECH</span></span>
+                <strong>FFXIV Map Tracker</strong>
+                <small data-i18n="brandTagline">Treasure Map journal & analytics</small>
             </div>
         </div>
 
-        <!-- Formularz wprowadzania danych -->
-        <form id="tracker-form" onsubmit="return false;">
-            <div class="form-group">
-                <label for="language">Wybór języka</label>
-                <select id="language">
-                    <option value="PL" selected>Polski</option>
-                    <option value="ENG">English</option>
-                    <option value="FR">Français</option>
-                </select>
-            </div>
+        <div class="sidebar-section sidebar-language">
+            <label class="sidebar-label" for="language" data-i18n="language">Language</label>
+            <select id="language" class="sidebar-select">
+                <option value="PL">Polski</option>
+                <option value="ENG">English</option>
+                <option value="FR">Français</option>
+            </select>
+        </div>
 
-            <div class="form-group">
-                <label for="calendar">Wybierz datę</label>
-                <input type="date" id="calendar">
-            </div>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="#tracker" class="nav-link active" data-view="tracker">
+                <span class="nav-icon">▣</span><span data-i18n="navTracker">Tracker</span>
+            </a>
+            <a href="#statistics" class="nav-link" data-view="statistics">
+                <span class="nav-icon">▥</span><span data-i18n="navStatistics">Statistics</span>
+            </a>
+            <a href="#guide" class="nav-link" data-view="guide">
+                <span class="nav-icon">?</span><span data-i18n="navGuide">Guide</span>
+            </a>
+            <a href="#about" class="nav-link" data-view="about">
+                <span class="nav-icon">ⓘ</span><span data-i18n="navAbout">About</span>
+            </a>
+        </nav>
 
-            <div class="form-group">
-                <label for="map-select">Mapa</label>
-                <select id="map-select"></select>
-            </div>
+        <div class="sidebar-spacer"></div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="num-maps">Liczba map</label>
-                    <input type="number" id="num-maps" min="0" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="num-portals">Liczba portali</label>
-                    <input type="number" id="num-portals" min="0" value="0">
-                </div>
-            </div>
+        <div class="sidebar-actions">
+            <button type="button" id="toggle-overlay-btn" class="btn btn-ghost btn-block">
+                <span>▱</span><span data-i18n="compactMode">Compact mode</span>
+            </button>
+            <a
+                class="btn btn-ghost btn-block"
+                href="https://github.com/RemiTechDev/FF-XIV-Map-Tracker"
+                target="_blank"
+                rel="noreferrer"
+            >
+                <span>⌘</span><span>GitHub</span>
+            </a>
+        </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="num-clears">Ukończone lochy (Clears)</label>
-                    <input type="number" id="num-clears" min="0" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="earned-gil">Zarobiony Gil</label>
-                    <input type="number" id="earned-gil" min="0" step="1000" value="0">
-                </div>
-            </div>
-
-            <div class="actions">
-                <button type="button" id="add-data" class="btn btn-primary">Dodaj dane</button>
-                <button type="button" id="edit-data" class="btn btn-secondary">Edytuj dane</button>
-                <button type="button" id="delete-data" class="btn btn-danger">Usuń wybrane dane</button>
-                <button type="button" id="reset-all" class="btn btn-outline">Wyczyść wszystko</button>
-            </div>
-        </form>
-
-        <footer class="menu-footer">
-            <div class="file-actions">
-                <button id="save-csv" class="btn-file">Zapisz jako CSV</button>
-                <button id="save-excel" class="btn-file">Zapisz jako Excel</button>
-            </div>
-        </footer>
+        <div class="sidebar-footer">
+            <span>v0.4.0</span>
+            <span>Local-first</span>
+        </div>
     </aside>
 
-    <!-- Główny panel: Wykres i Tabela -->
-    <main class="content">
-        <section class="chart-panel">
-            <div class="section-header">
-                <span class="eyebrow" id="chart-eyebrow">STATYSTYKI</span>
-                <h2 id="chart-title">Przegląd zysków i wskaźników</h2>
+    <!-- ======================================================================
+         Workspace: active application view
+         ====================================================================== -->
+    <main class="workspace">
+        <!-- ======================================================================
+             Top bar
+             ====================================================================== -->
+        <header class="topbar">
+            <button type="button" id="mobile-menu-btn" class="icon-btn mobile-only" aria-label="Open navigation">☰</button>
+            <div>
+                <span class="eyebrow" id="view-eyebrow">TREASURE JOURNAL</span>
+                <h1 id="view-title">Tracker</h1>
             </div>
-            <div class="chart-container">
-                <canvas id="charts"></canvas>
+            <div class="topbar-right">
+                <button type="button" id="compact-exit-btn" class="btn btn-ghost" hidden>Exit compact</button>
+                <span class="save-indicator" id="save-indicator" data-i18n="savedLocally">Saved locally</span>
+            </div>
+        </header>
+
+        <!-- ======================================================================
+             View: Tracker
+             ====================================================================== -->
+        <section class="view active" id="view-tracker" data-view-panel="tracker">
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Tracker: summary KPI cards -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="kpi-grid kpi-grid-6" id="tracker-kpis">
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="totalMaps">Total maps</span>
+                    <strong class="kpi-value" id="total-maps">0</strong>
+                    <small class="kpi-hint" data-i18n="allRecordedRuns">All recorded runs</small>
+                </article>
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="totalPortals">Portals</span>
+                    <strong class="kpi-value" id="total-portals">0</strong>
+                    <small class="kpi-hint" id="portal-rate-hint">0.0% portal rate</small>
+                </article>
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="totalClears">Dungeon clears</span>
+                    <strong class="kpi-value" id="total-clears">0</strong>
+                    <small class="kpi-hint" id="clear-rate-hint">0.0% clear rate</small>
+                </article>
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="earnedGil">Gil earned</span>
+                    <strong class="kpi-value" id="total-earned">0</strong>
+                    <small class="kpi-hint">Gil</small>
+                </article>
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="spentGil">Gil spent</span>
+                    <strong class="kpi-value" id="total-spent">0</strong>
+                    <small class="kpi-hint">Gil</small>
+                </article>
+                <article class="kpi-card accent-card">
+                    <span class="kpi-label" data-i18n="netProfit">Net profit</span>
+                    <strong class="kpi-value" id="total-profit">0</strong>
+                    <small class="kpi-hint">Gil</small>
+                </article>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Tracker: session form and map overview -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="tracker-layout">
+                <section class="panel form-panel">
+                    <div class="panel-header">
+                        <div>
+                            <span class="eyebrow" data-i18n="sessionEntryEyebrow">SESSION ENTRY</span>
+                            <h2 id="session-form-title" data-i18n="addSession">Add session</h2>
+                        </div>
+                        <span class="panel-badge" id="map-meta-badge">—</span>
+                    </div>
+
+                    <form id="tracker-form" novalidate>
+                        <div class="form-group">
+                            <label for="calendar" data-i18n="date">Date</label>
+                            <input type="date" id="calendar" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="map-select" data-i18n="map">Treasure map</label>
+                            <select id="map-select" required></select>
+                            <small class="field-help" id="map-help"></small>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="num-maps" data-i18n="mapsCompleted">Maps completed</label>
+                                <input type="number" id="num-maps" min="1" step="1" value="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="num-portals" data-i18n="portalsOpened">Portals opened</label>
+                                <input type="number" id="num-portals" min="0" step="1" value="0">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="num-clears" data-i18n="dungeonClears">Dungeon clears</label>
+                                <input type="number" id="num-clears" min="0" step="1" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="earned-gil" data-i18n="earnedGil">Gil earned</label>
+                                <input type="number" id="earned-gil" min="0" step="1" value="0">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="spent-gil" data-i18n="mapCostTotal">Map purchase cost (total)</label>
+                            <input type="number" id="spent-gil" min="0" step="1" value="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="session-note" data-i18n="noteOptional">Note (optional)</label>
+                            <textarea
+                                id="session-note"
+                                rows="3"
+                                maxlength="300"
+                                data-i18n-placeholder="notePlaceholder"
+                                placeholder="Party, route, special drop..."
+                            ></textarea>
+                        </div>
+
+                        <div class="form-error" id="form-error" role="alert" hidden></div>
+
+                        <div class="form-actions">
+                            <button type="submit" id="save-session-btn" class="btn btn-primary"
+                                    data-i18n="addSession">Add session</button>
+                            <button
+                                type="button"
+                                id="cancel-edit-btn"
+                                class="btn btn-secondary"
+                                data-i18n="cancelEdit"
+                                hidden
+                            >
+                                Cancel edit
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="panel table-panel">
+                    <div class="panel-header panel-header-wrap">
+                        <div>
+                            <span class="eyebrow" data-i18n="mapOverviewEyebrow">MAP OVERVIEW</span>
+                            <h2 data-i18n="mapPerformance">Map performance</h2>
+                        </div>
+                        <div class="inline-filters">
+                            <select id="map-type-filter" aria-label="Map type filter">
+                                <option value="ALL" data-i18n="allTypes">All types</option>
+                                <option value="PARTY">Party</option>
+                                <option value="SOLO">Solo</option>
+                                <option value="PORTAL" data-i18n="portalEligible">Portal eligible</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="map-table">
+                            <thead>
+                            <tr>
+                                <th data-i18n="map">Map</th>
+                                <th data-i18n="level">Level</th>
+                                <th data-i18n="type">Type</th>
+                                <th data-i18n="maps">Maps</th>
+                                <th data-i18n="portals">Portals</th>
+                                <th data-i18n="portalRate">Portal rate</th>
+                                <th data-i18n="clears">Clears</th>
+                                <th data-i18n="earned">Earned</th>
+                                <th data-i18n="spent">Spent</th>
+                                <th data-i18n="profit">Profit</th>
+                            </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Tracker: session history -->
+            <!-- ------------------------------------------------------------------ -->
+            <section class="panel history-panel">
+                <div class="panel-header panel-header-wrap">
+                    <div>
+                        <span class="eyebrow" data-i18n="historyEyebrow">HISTORY</span>
+                        <h2 data-i18n="sessionHistory">Session history</h2>
+                    </div>
+                    <div class="history-actions">
+                        <button type="button" id="reset-all-btn" class="btn btn-danger-soft"
+                                data-i18n="resetAll">Reset all data</button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="history-table">
+                        <thead>
+                        <tr>
+                            <th data-i18n="date">Date</th>
+                            <th data-i18n="map">Map</th>
+                            <th data-i18n="maps">Maps</th>
+                            <th data-i18n="portals">Portals</th>
+                            <th data-i18n="clears">Clears</th>
+                            <th data-i18n="earned">Earned</th>
+                            <th data-i18n="spent">Spent</th>
+                            <th data-i18n="profit">Profit</th>
+                            <th data-i18n="actions">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="history-empty" hidden>
+                    <strong data-i18n="noSessions">No sessions yet</strong>
+                    <span data-i18n="noSessionsHint">Add your first map run using the form above.</span>
+                </div>
+            </section>
+        </section>
+
+        <!-- ======================================================================
+             View: Statistics
+             ====================================================================== -->
+        <section class="view" id="view-statistics" data-view-panel="statistics" hidden>
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Statistics: heading and filters -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow" data-i18n="analyticsEyebrow">ANALYTICS</span>
+                    <h2 data-i18n="statisticsDashboard">Statistics dashboard</h2>
+                    <p data-i18n="statisticsIntro">Explore map volume, portal performance and Gil profitability.</p>
+                </div>
+                <div class="stats-filters">
+                    <select id="stats-period" aria-label="Statistics period">
+                        <option value="ALL" data-i18n="allTime">All time</option>
+                        <option value="30" data-i18n="last30Days">Last 30 days</option>
+                        <option value="90" data-i18n="last90Days">Last 90 days</option>
+                        <option value="365" data-i18n="lastYear">Last 365 days</option>
+                    </select>
+                    <select id="stats-level" aria-label="Level filter">
+                        <option value="ALL" data-i18n="allLevels">All levels</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Statistics: KPI cards -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="kpi-grid kpi-grid-4">
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="portalRate">Portal rate</span>
+                    <strong class="kpi-value" id="stats-portal-rate">0.0%</strong>
+                    <small class="kpi-hint" data-i18n="eligibleMapsOnly">Eligible maps only</small>
+                </article>
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="clearRate">Clear rate</span>
+                    <strong class="kpi-value" id="stats-clear-rate">0.0%</strong>
+                    <small class="kpi-hint" data-i18n="ofOpenedPortals">Of opened portals</small>
+                </article>
+                <article class="kpi-card">
+                    <span class="kpi-label" data-i18n="avgProfitMap">Avg. profit / map</span>
+                    <strong class="kpi-value" id="stats-avg-profit">0</strong>
+                    <small class="kpi-hint">Gil</small>
+                </article>
+                <article class="kpi-card accent-card">
+                    <span class="kpi-label" data-i18n="netProfit">Net profit</span>
+                    <strong class="kpi-value" id="stats-profit">0</strong>
+                    <small class="kpi-hint">Gil</small>
+                </article>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Statistics: charts -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="charts-grid">
+                <article class="panel chart-card">
+                    <div class="panel-header">
+                        <div><span class="eyebrow">LEVELS</span><h3 data-i18n="mapsPortalsByLevel">
+                            Maps & portals by level</h3></div>
+                    </div>
+                    <div class="chart-wrap"><canvas id="level-chart"></canvas></div>
+                </article>
+                <article class="panel chart-card">
+                    <div class="panel-header">
+                        <div><span class="eyebrow">GIL</span><h3 data-i18n="gilOverTime">Gil over time</h3></div>
+                    </div>
+                    <div class="chart-wrap"><canvas id="finance-chart"></canvas></div>
+                </article>
+                <article class="panel chart-card">
+                    <div class="panel-header">
+                        <div><span class="eyebrow">PROFIT</span><h3 data-i18n="profitByMap">Profit by map</h3></div>
+                    </div>
+                    <div class="chart-wrap chart-wrap-tall"><canvas id="profit-chart"></canvas></div>
+                </article>
+                <article class="panel chart-card">
+                    <div class="panel-header">
+                        <div><span class="eyebrow">PORTALS</span><h3 data-i18n="portalRateByMap">
+                            Portal rate by map</h3></div>
+                    </div>
+                    <div class="chart-wrap chart-wrap-tall"><canvas id="portal-chart"></canvas></div>
+                </article>
             </div>
         </section>
 
-        <section class="table-panel">
-            <div class="section-header">
-                <span class="eyebrow" id="table-eyebrow">DANE</span>
-                <h2 id="table-title">Szczegóły map i zysku</h2>
+        <!-- ======================================================================
+             View: Guide / How to use
+             ====================================================================== -->
+        <section class="view" id="view-guide" data-view-panel="guide" hidden>
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow" data-i18n="guideEyebrow">HOW TO USE</span>
+                    <h2 data-i18n="guideTitle">Guide</h2>
+                    <p data-i18n="guideIntro">A quick walkthrough of the tracker, statistics and backups.</p>
+                </div>
             </div>
-            <div class="table-wrapper">
-                <table id="data-table">
-                    <thead>
-                    <tr>
-                        <th id="th-name">Nazwa mapy</th>
-                        <th id="th-type">Typ</th>
-                        <th id="th-level">Poziom</th>
-                        <th id="th-maps">Mapy</th>
-                        <th id="th-portals">Portale</th>
-                        <th id="th-clears">Clears</th>
-                        <th id="th-gil">Suma Gil</th>
-                        <th id="th-avggil">Śr. Gil / Mapa</th>
-                        <th id="th-quick">+1 Szybkie akcje</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <!-- Wiersze generowane dynamicznie przez JS -->
-                    </tbody>
-                </table>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Guide: quick start -->
+            <!-- ------------------------------------------------------------------ -->
+            <section class="panel quick-start">
+                <span class="eyebrow">QUICK START</span>
+                <div class="quick-start-grid">
+                    <div><strong>1</strong><span data-i18n="guideStep1Short">Choose a map</span></div>
+                    <div><strong>2</strong><span data-i18n="guideStep2Short">Enter results</span></div>
+                    <div><strong>3</strong><span data-i18n="guideStep3Short">Save session</span></div>
+                    <div><strong>4</strong><span data-i18n="guideStep4Short">Check statistics</span></div>
+                    <div><strong>5</strong><span data-i18n="guideStep5Short">Create a backup</span></div>
+                </div>
+            </section>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Guide: detailed steps -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="guide-grid">
+                <article class="panel guide-card">
+                    <span class="guide-number">01</span>
+                    <h3 data-i18n="guideChooseTitle">Select a Treasure Map</h3>
+                    <p data-i18n="guideChooseText">
+                        Choose the map you are running. The app automatically knows its level,
+                        type and whether it can open a treasure dungeon portal.
+                    </p>
+                </article>
+                <article class="panel guide-card">
+                    <span class="guide-number">02</span>
+                    <h3 data-i18n="guideResultsTitle">Enter the session results</h3>
+                    <p data-i18n="guideResultsText">
+                        Record completed maps, opened portals, dungeon clears, earned Gil and
+                        the total purchase cost of the maps.
+                    </p>
+                </article>
+                <article class="panel guide-card">
+                    <span class="guide-number">03</span>
+                    <h3 data-i18n="guideStatsTitle">Read the statistics</h3>
+                    <p data-i18n="guideStatsText">
+                        Portal rate is calculated only from portal-eligible maps. Clear rate is
+                        calculated from opened portals. Profit equals earned Gil minus map purchase cost.
+                    </p>
+                </article>
+                <article class="panel guide-card">
+                    <span class="guide-number">04</span>
+                    <h3 data-i18n="guideBackupTitle">Export & restore</h3>
+                    <p data-i18n="guideBackupText">
+                        Use JSON for a complete restorable backup, CSV for raw session data,
+                        XLSX for a polished report and ODS for LibreOffice Calc.
+                    </p>
+                </article>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- Guide: FAQ -->
+            <!-- ------------------------------------------------------------------ -->
+            <section class="panel faq-panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="eyebrow">FAQ</span>
+                        <h3 data-i18n="faqTitle">Frequently asked questions</h3>
+                    </div>
+                </div>
+                <details>
+                    <summary data-i18n="faqPortalQ">What counts toward portal rate?</summary>
+                    <p data-i18n="faqPortalA">
+                        Only completed maps marked as portal eligible in the map database are used
+                        as the denominator.
+                    </p>
+                </details>
+                <details>
+                    <summary data-i18n="faqProfitQ">What is net profit?</summary>
+                    <p data-i18n="faqProfitA">Net profit = Gil earned − total cost of purchased maps.</p>
+                </details>
+                <details>
+                    <summary data-i18n="faqStorageQ">Where is my data stored?</summary>
+                    <p data-i18n="faqStorageA">
+                        Your data is stored in this browser using localStorage. Export a JSON backup
+                        before clearing browser data or moving to another device.
+                    </p>
+                </details>
+                <details>
+                    <summary data-i18n="faqLegacyQ">What happens to older V3 data?</summary>
+                    <p data-i18n="faqLegacyA">
+                        The app migrates existing V3 totals into legacy sessions. Their original dates
+                        and historical map costs were not stored, so time-based charts exclude entries
+                        without a known date.
+                    </p>
+                </details>
+            </section>
+        </section>
+
+        <!-- ======================================================================
+             View: About application
+             ====================================================================== -->
+        <section class="view" id="view-about" data-view-panel="about" hidden>
+            <div class="about-hero panel">
+                <div class="about-symbol">✦</div>
+                <span class="eyebrow">FFXIV MAP TRACKER</span>
+                <h2 data-i18n="aboutHeadline">Track. Analyze. Profit.</h2>
+                <p data-i18n="aboutLead">
+                    A local-first companion for Final Fantasy XIV Treasure Map sessions, portals,
+                    dungeon clears and Gil profitability.
+                </p>
+                <div class="about-tags">
+                    <span>PWA</span><span>Chart.js</span><span>Excel / LibreOffice</span><span>Local-first</span>
+                </div>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- About: project details -->
+            <!-- ------------------------------------------------------------------ -->
+            <div class="about-grid">
+                <article class="panel">
+                    <span class="eyebrow" data-i18n="aboutAppEyebrow">ABOUT APP</span>
+                    <h3 data-i18n="aboutAppTitle">Built for Treasure Map tracking</h3>
+                    <p data-i18n="aboutAppText">
+                        FFXIV Map Tracker records each session separately, then derives map totals,
+                        level statistics, portal rates and financial results from the session history.
+                    </p>
+                </article>
+                <article class="panel">
+                    <span class="eyebrow" data-i18n="privacyEyebrow">YOUR DATA</span>
+                    <h3 data-i18n="privacyTitle">Stored locally</h3>
+                    <p data-i18n="privacyText">
+                        The tracker does not require an account or server database. Your records remain
+                        in your browser unless you export them yourself.
+                    </p>
+                </article>
+                <article class="panel">
+                    <span class="eyebrow" data-i18n="exportEyebrow">REPORTING</span>
+                    <h3 data-i18n="exportTitle">Portable reports & backups</h3>
+                    <p data-i18n="exportText">
+                        Generate a multi-sheet XLSX report with charts, an ODS workbook, raw CSV
+                        session data or a complete JSON backup.
+                    </p>
+                </article>
+                <article class="panel">
+                    <span class="eyebrow">REMiTECH</span>
+                    <h3>Open project</h3>
+                    <p>Version 0.4.0 · HTML · CSS · JavaScript · Chart.js · ExcelJS · SheetJS.</p>
+                    <a
+                        class="text-link"
+                        href="https://github.com/RemiTechDev/FF-XIV-Map-Tracker"
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        github.com/RemiTechDev/FF-XIV-Map-Tracker ↗
+                    </a>
+                </article>
+            </div>
+
+            <!-- ------------------------------------------------------------------ -->
+            <!-- About: legal notice -->
+            <!-- ------------------------------------------------------------------ -->
+            <section class="panel legal-panel">
+                <h3 data-i18n="legalTitle">Legal notice</h3>
+                <p data-i18n="legalText">
+                    FINAL FANTASY XIV and related names, marks and assets are the property of
+                    Square Enix Holdings Co., Ltd. This fan-made tracker is not affiliated with
+                    or endorsed by Square Enix.
+                </p>
+            </section>
+        </section>
+
+        <!-- ======================================================================
+             Shared export & backup controls
+             ====================================================================== -->
+        <section class="panel export-dock" aria-labelledby="export-title">
+            <div class="export-dock-copy">
+                <span class="eyebrow" data-i18n="exportBackupEyebrow">EXPORT & BACKUP</span>
+                <h2 id="export-title" data-i18n="exportBackupTitle">Keep your progress safe</h2>
+                <p data-i18n="exportBackupIntro">
+                    Create clear reports, save a backup of your progress, and restore your data whenever you need it.
+                </p>
+            </div>
+
+            <div class="export-groups">
+                <!-- Reports are one-way exports for analysis. -->
+                <div class="export-group">
+                    <div class="export-group-heading">
+                        <span class="export-group-title" data-i18n="reportsLabel">Reports</span>
+                        <span class="export-group-note" data-i18n="reportsHint">Export your results for
+                            Excel, LibreOffice, or further analysis</span>
+                    </div>
+                    <div class="export-buttons">
+                        <button type="button" id="export-xlsx-btn" class="btn btn-secondary">XLSX</button>
+                        <button type="button" id="export-ods-btn" class="btn btn-secondary">ODS</button>
+                        <button type="button" id="export-csv-btn" class="btn btn-secondary">CSV</button>
+                    </div>
+                </div>
+
+                <!-- JSON is the only format used to restore application data. -->
+                <div class="export-group export-group-backup">
+                    <div class="export-group-heading">
+                        <span class="export-group-title" data-i18n="backupLabel">Data backup</span>
+                        <span class="export-group-note" data-i18n="backupHint">Save your progress safely or
+                            restore it on another device</span>
+                    </div>
+                    <div class="export-buttons">
+                        <button
+                            type="button"
+                            id="export-json-btn"
+                            class="btn btn-secondary"
+                            data-i18n="downloadJsonBackup"
+                        >
+                            Download JSON backup
+                        </button>
+                        <button
+                            type="button"
+                            id="import-json-btn"
+                            class="btn btn-ghost"
+                            data-i18n="restoreJsonBackup"
+                        >
+                            Restore JSON backup
+                        </button>
+                        <input type="file" id="import-json-file" accept="application/json,.json" hidden>
+                    </div>
+                </div>
+
+                <!-- ZIP contains only generated data files, never the web app source. -->
+                <div class="export-package-row">
+                    <button
+                        type="button"
+                        id="export-all-btn"
+                        class="btn btn-primary"
+                        data-i18n="downloadDataPackage"
+                    >
+                        Download complete data package (.zip)
+                    </button>
+                    <span class="export-package-note" data-i18n="dataPackageHint">
+                        Reports and a backup together in one ZIP file.
+                    </span>
+                </div>
             </div>
         </section>
     </main>
 </div>
 
+<!-- ======================================================================
+     Global UI helpers
+     ====================================================================== -->
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="modal-backdrop" id="mobile-backdrop" hidden></div>
+
+<!-- ======================================================================
+     Application entry point
+     ====================================================================== -->
 <script type="module" src="js/app.js"></script>
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(console.error);
+        window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(console.error));
     }
 </script>
 </body>

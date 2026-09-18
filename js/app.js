@@ -1,413 +1,676 @@
-import { MAPS_DATABASE } from "./mapsData.js";
-import { loadState, saveState, clearState, saveSession } from "./storage.js";
-import { calculateTotals, calculateAvgGil } from "./calculations.js";
+// ============================================================================
+// Dependencies
+// ============================================================================
+import { MAPS_DATABASE, getMapById, getMapLevels } from "./mapsData.js";
+import {
+    addSession,
+    clearAppData,
+    createDefaultAppData,
+    deleteSession,
+    loadAppData,
+    replaceAppData,
+    saveAppData,
+    setSettings,
+    updateSession
+} from "./storage.js";
+import {
+    aggregateByMap,
+    calculateTotals,
+    filterSessions,
+    formatNumber,
+    formatPercent,
+    sessionProfit
+} from "./calculations.js";
+import { applyTranslations, getLocale, t } from "./i18n.js";
+import { renderStatisticsCharts, resizeStatisticsCharts } from "./statistics/charts.js";
+import { exportCsv } from "./export/csvExport.js";
+import { exportJson, readJsonFile } from "./export/jsonExport.js";
+import { exportExcel } from "./export/excelExport.js";
+import { exportOds } from "./export/odsExport.js";
+import { exportDataPackage } from "./export/bundleExport.js";
 
-function buildDefaultMapData() {
-    const data = {};
-    MAPS_DATABASE.forEach(m => {
-        data[m.id] = {
-            num_maps: 0,
-            num_portals: 0,
-            num_clears: 0,
-            earned_gil: 0,
-            isParty: m.type === "Party"
-        };
-    });
-    return data;
-}
+// ============================================================================
+// Application state
+// ============================================================================
+let appData = loadAppData();
+let editingSessionId = null;
+let toastTimer = null;
 
-let mapData = loadState(buildDefaultMapData());
-let currentLang = "PL";
-let currentFilter = "ALL";
-let sortKey = "name";
-let sortAsc = true;
-let barChart = null;
+// ============================================================================
+// DOM helpers and cached elements
+// ============================================================================
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
 
 const elements = {
-    language: document.getElementById("language"),
-    calendar: document.getElementById("calendar"),
-    mapSelect: document.getElementById("map-select"),
-    numMaps: document.getElementById("num-maps"),
-    numPortals: document.getElementById("num-portals"),
-    numClears: document.getElementById("num-clears"),
-    earnedGil: document.getElementById("earned-gil"),
-
-    totalMaps: document.getElementById("total-maps"),
-    totalPortals: document.getElementById("total-portals"),
-    totalClears: document.getElementById("total-clears"),
-    totalGil: document.getElementById("total-gil"),
-
-    tableBody: document.getElementById("data-table").querySelector("tbody")
+    language: $("#language"),
+    calendar: $("#calendar"),
+    mapSelect: $("#map-select"),
+    maps: $("#num-maps"),
+    portals: $("#num-portals"),
+    clears: $("#num-clears"),
+    earned: $("#earned-gil"),
+    spent: $("#spent-gil"),
+    note: $("#session-note"),
+    form: $("#tracker-form"),
+    formError: $("#form-error"),
+    saveSessionBtn: $("#save-session-btn"),
+    cancelEditBtn: $("#cancel-edit-btn"),
+    mapMetaBadge: $("#map-meta-badge"),
+    mapHelp: $("#map-help"),
+    mapTableBody: $("#map-table tbody"),
+    historyBody: $("#history-table tbody"),
+    historyEmpty: $("#history-empty"),
+    mapTypeFilter: $("#map-type-filter"),
+    statsPeriod: $("#stats-period"),
+    statsLevel: $("#stats-level"),
+    sidebar: $("#sidebar"),
+    mobileBackdrop: $("#mobile-backdrop"),
+    toast: $("#toast"),
+    compactExit: $("#compact-exit-btn")
 };
 
-const translations = {
-    PL: {
-        eyebrowHeader: "DZIENNIK POSZUKIWACZA PRZYGÓD",
-        title: "FFXIV Map Tracker",
-        description: "Śledź mapy, portale, ukończone lochy i zysk w Gil.",
-        totalMaps: "Razem mapy",
-        totalPortals: "Razem portale",
-        totalClears: "Ukończone lochy",
-        totalGil: "Suma Gil",
-        language: "Wybór języka",
-        date: "Wybierz datę",
-        mapLabel: "Mapa",
-        numMaps: "Liczba map",
-        numPortals: "Liczba portali",
-        numClears: "Ukończone lochy (Clears)",
-        earnedGil: "Zarobiony Gil",
-        addDataBtn: "Dodaj dane",
-        editDataBtn: "Edytuj dane",
-        deleteDataBtn: "Usuń wybrane dane",
-        resetAllBtn: "Wyczyść wszystko",
-        saveCsvBtn: "Zapisz jako CSV",
-        saveExcelBtn: "Zapisz jako Excel",
-        eyebrowStats: "STATYSTYKI",
-        chartTitle: "Przegląd zysków i wskaźników",
-        eyebrowData: "DANE",
-        tableTitle: "Szczegóły map i zysku",
-        thName: "Nazwa mapy",
-        thType: "Typ",
-        thLevel: "Poziom",
-        thMaps: "Mapy",
-        thPortals: "Portale",
-        thClears: "Clears",
-        thGil: "Suma Gil",
-        thAvgGil: "Śr. Gil / Mapa",
-        thQuick: "+1 Szybkie akcje"
-    },
-    ENG: {
-        eyebrowHeader: "ADVENTURER'S RECORD",
-        title: "FFXIV Map Tracker",
-        description: "Track maps, portals, dungeon clears and Gil earnings.",
-        totalMaps: "Total maps",
-        totalPortals: "Total portals",
-        totalClears: "Dungeon Clears",
-        totalGil: "Total Gil",
-        language: "Language",
-        date: "Select date",
-        mapLabel: "Map",
-        numMaps: "Number of maps",
-        numPortals: "Number of portals",
-        numClears: "Dungeon Clears",
-        earnedGil: "Earned Gil",
-        addDataBtn: "Add data",
-        editDataBtn: "Edit data",
-        deleteDataBtn: "Delete selected data",
-        resetAllBtn: "Reset all data",
-        saveCsvBtn: "Save as CSV",
-        saveExcelBtn: "Save as Excel",
-        eyebrowStats: "STATISTICS",
-        chartTitle: "Earnings & Rates Overview",
-        eyebrowData: "DATA",
-        tableTitle: "Map Details & Earnings",
-        thName: "Map Name",
-        thType: "Type",
-        thLevel: "Level",
-        thMaps: "Maps",
-        thPortals: "Portals",
-        thClears: "Clears",
-        thGil: "Total Gil",
-        thAvgGil: "Avg. Gil / Map",
-        thQuick: "+1 Quick Actions"
-    },
-    FR: {
-        eyebrowHeader: "REGISTRE D'AVENTURIER",
-        title: "Suivi de carte FFXIV",
-        description: "Suivez vos cartes, portails, donjons terminés et vos gains en Gils.",
-        totalMaps: "Cartes totales",
-        totalPortals: "Portails totaux",
-        totalClears: "Donjons terminés",
-        totalGil: "Gils totaux",
-        language: "Langue",
-        date: "Sélectionner une date",
-        mapLabel: "Carte",
-        numMaps: "Nombre de cartes",
-        numPortals: "Nombre de portails",
-        numClears: "Donjons terminés",
-        earnedGil: "Gils gagnés",
-        addDataBtn: "Ajouter des données",
-        editDataBtn: "Modifier les données",
-        deleteDataBtn: "Supprimer les données",
-        resetAllBtn: "Tout réinitialiser",
-        saveCsvBtn: "Enregistrer CSV",
-        saveExcelBtn: "Enregistrer Excel",
-        eyebrowStats: "STATISTIQUES",
-        chartTitle: "Aperçu des gains et des taux",
-        eyebrowData: "DONNÉES",
-        tableTitle: "Détails des cartes et gains",
-        thName: "Nom de la carte",
-        thType: "Type",
-        thLevel: "Niveau",
-        thMaps: "Cartes",
-        thPortals: "Portails",
-        thClears: "Clears",
-        thGil: "Gils totaux",
-        thAvgGil: "Moy. Gils / Carte",
-        thQuick: "+1 Actions rapides"
-    }
-};
+// ============================================================================
+// Formatting and persistence helpers
+// ============================================================================
+function currentLang() {
+    return appData.settings.language || "PL";
+}
 
-function populateMapDropdown() {
+function locale() {
+    return getLocale(currentLang());
+}
+
+function money(value) {
+    return formatNumber(value, locale());
+}
+
+function today() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function showToast(message) {
+    clearTimeout(toastTimer);
+    elements.toast.textContent = message;
+    elements.toast.hidden = false;
+    toastTimer = setTimeout(() => {
+        elements.toast.hidden = true;
+    }, 3200);
+}
+
+function flashSaved() {
+    const indicator = $("#save-indicator");
+    if (!indicator) return;
+    indicator.style.opacity = ".45";
+    setTimeout(() => {
+        indicator.style.opacity = "1";
+    }, 160);
+}
+
+function persist() {
+    appData = saveAppData(appData);
+    flashSaved();
+}
+
+// ============================================================================
+// Form setup and validation
+// ============================================================================
+function populateMapSelect() {
     elements.mapSelect.innerHTML = "";
-    MAPS_DATABASE.forEach(m => {
-        const opt = document.createElement("option");
-        opt.value = m.id;
-        opt.textContent = `[Lv.${m.level}] ${m.name} (${m.type})`;
-        elements.mapSelect.appendChild(opt);
+    for (const map of MAPS_DATABASE) {
+        const option = document.createElement("option");
+        option.value = map.id;
+        option.textContent = `[Lv.${map.level}] ${map.name} · ${map.type}`;
+        elements.mapSelect.appendChild(option);
+    }
+}
+
+function populateLevelFilter() {
+    const selected = elements.statsLevel.value || "ALL";
+    elements.statsLevel.innerHTML = `<option value="ALL" data-i18n="allLevels">${t(currentLang(), "allLevels")}</option>`;
+    for (const level of getMapLevels()) {
+        const option = document.createElement("option");
+        option.value = String(level);
+        option.textContent = `Lv. ${level}`;
+        elements.statsLevel.appendChild(option);
+    }
+    elements.statsLevel.value = [...elements.statsLevel.options].some(o => o.value === selected) ? selected : "ALL";
+}
+
+function updateMapFormState() {
+    const map = getMapById(elements.mapSelect.value);
+    if (!map) return;
+    elements.mapMetaBadge.textContent = `Lv.${map.level} · ${map.type}${map.portalEligible ? " · Portal" : ""}`;
+    elements.mapHelp.textContent = map.portalEligible
+        ? `${map.dungeon ?? "Treasure dungeon"} · portal eligible`
+        : "No treasure dungeon portal for this map.";
+    elements.portals.disabled = !map.portalEligible;
+    elements.clears.disabled = !map.portalEligible;
+    if (!map.portalEligible) {
+        elements.portals.value = "0";
+        elements.clears.value = "0";
+    }
+}
+
+function setFormError(message = "") {
+    elements.formError.textContent = message;
+    elements.formError.hidden = !message;
+}
+
+function readForm() {
+    const map = getMapById(elements.mapSelect.value);
+    const session = {
+        date: elements.calendar.value,
+        mapId: elements.mapSelect.value,
+        maps: Number(elements.maps.value),
+        portals: Number(elements.portals.value),
+        clears: Number(elements.clears.value),
+        earnedGil: Number(elements.earned.value),
+        spentGil: Number(elements.spent.value),
+        note: elements.note.value.trim()
+    };
+
+    if (!map) {
+        throw new Error("Select a valid map.");
+    }
+
+    if (!session.date) {
+        throw new Error("Select a date.");
+    }
+
+    if (!Number.isInteger(session.maps) || session.maps < 1) {
+        throw new Error("Maps completed must be at least 1.");
+    }
+
+    const numericValues = [
+        session.portals,
+        session.clears,
+        session.earnedGil,
+        session.spentGil
+    ];
+
+    if (!numericValues.every(value => Number.isFinite(value) && value >= 0)) {
+        throw new Error("Values cannot be negative.");
+    }
+
+    if (!Number.isInteger(session.portals) || !Number.isInteger(session.clears)) {
+        throw new Error("Portals and clears must be whole numbers.");
+    }
+
+    if (!map.portalEligible && (session.portals > 0 || session.clears > 0)) {
+        throw new Error("This map does not have a treasure dungeon portal.");
+    }
+
+    if (session.portals > session.maps) {
+        throw new Error("Portals cannot exceed completed maps in one session.");
+    }
+
+    if (session.clears > session.portals) {
+        throw new Error("Dungeon clears cannot exceed opened portals.");
+    }
+
+    return session;
+}
+
+function resetForm() {
+    editingSessionId = null;
+    elements.form.reset();
+    elements.calendar.value = today();
+    elements.maps.value = "1";
+    elements.portals.value = "0";
+    elements.clears.value = "0";
+    elements.earned.value = "0";
+    elements.spent.value = "0";
+    elements.saveSessionBtn.textContent = t(currentLang(), "addSession");
+    $("#session-form-title").textContent = t(currentLang(), "addSession");
+    elements.cancelEditBtn.hidden = true;
+    setFormError();
+    updateMapFormState();
+}
+
+function startEdit(sessionId) {
+    const session = appData.sessions.find(row => row.id === sessionId);
+    if (!session) return;
+    editingSessionId = sessionId;
+    elements.calendar.value = session.date ?? "";
+    elements.mapSelect.value = session.mapId;
+    elements.maps.value = String(session.maps);
+    elements.portals.value = String(session.portals);
+    elements.clears.value = String(session.clears);
+    elements.earned.value = String(session.earnedGil);
+    elements.spent.value = String(session.spentGil);
+    elements.note.value = session.note ?? "";
+    elements.saveSessionBtn.textContent = t(currentLang(), "saveChanges");
+    $("#session-form-title").textContent = t(currentLang(), "saveChanges");
+    elements.cancelEditBtn.hidden = false;
+    updateMapFormState();
+    location.hash = "#tracker";
+    $("#tracker-form").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// ============================================================================
+// Tracker rendering
+// ============================================================================
+function renderSummary(sessions = appData.sessions) {
+    const totals = calculateTotals(sessions);
+    $("#total-maps").textContent = money(totals.totalMaps);
+    $("#total-portals").textContent = money(totals.totalPortals);
+    $("#total-clears").textContent = money(totals.totalClears);
+    $("#total-earned").textContent = money(totals.earnedGil);
+    $("#total-spent").textContent = money(totals.spentGil);
+    $("#total-profit").textContent = money(totals.profitGil);
+    $("#portal-rate-hint").textContent = `${formatPercent(totals.portalRate, locale())} portal rate`;
+    $("#clear-rate-hint").textContent = `${formatPercent(totals.clearRate, locale())} clear rate`;
+}
+
+function renderMapTable() {
+    let rows = aggregateByMap(appData.sessions);
+    const filter = elements.mapTypeFilter.value;
+    if (filter === "PARTY") {
+        rows = rows.filter(row => row.type === "Party");
+    }
+
+    if (filter === "SOLO") {
+        rows = rows.filter(row => row.type === "Solo");
+    }
+
+    if (filter === "PORTAL") {
+        rows = rows.filter(row => row.portalEligible);
+    }
+    rows.sort((a, b) => b.level - a.level || a.name.localeCompare(b.name));
+
+    elements.mapTableBody.innerHTML = rows.map(row => {
+        const profitClass = row.profitGil > 0
+            ? "number-positive"
+            : row.profitGil < 0
+                ? "number-negative"
+                : "";
+
+        const dungeonLabel = row.dungeon
+            ?? (row.portalEligible ? "Portal eligible" : "No portal");
+
+        return `<tr>
+            <td class="map-name-cell">
+                <strong>${escapeHtml(row.name)}</strong>
+                <small>${escapeHtml(dungeonLabel)}</small>
+            </td>
+            <td>${row.level}</td>
+            <td>${row.type}</td>
+            <td>${money(row.maps)}</td>
+            <td>${row.portalEligible ? money(row.portals) : "—"}</td>
+            <td>${row.portalEligible ? formatPercent(row.portalRate, locale()) : "—"}</td>
+            <td>${row.portalEligible ? money(row.clears) : "—"}</td>
+            <td>${money(row.earnedGil)}</td>
+            <td>${money(row.spentGil)}</td>
+            <td class="${profitClass}">${money(row.profitGil)}</td>
+        </tr>`;
+    }).join("");
+}
+
+function renderHistory() {
+    const sessions = [...appData.sessions].sort((a, b) => {
+        const dateA = a.date ?? "0000-00-00";
+        const dateB = b.date ?? "0000-00-00";
+        if (dateA !== dateB) return dateB.localeCompare(dateA);
+        return String(b.createdAt).localeCompare(String(a.createdAt));
+    });
+
+    elements.historyEmpty.hidden = sessions.length > 0;
+    elements.historyBody.innerHTML = sessions.map(session => {
+        const map = getMapById(session.mapId);
+        const profit = sessionProfit(session);
+        const profitClass = profit > 0
+            ? "number-positive"
+            : profit < 0
+                ? "number-negative"
+                : "";
+
+        const legacyBadge = session.source === "legacy-v3"
+            ? '<span class="legacy-badge">legacy</span>'
+            : "";
+
+        const note = session.note
+            ? `<small title="${escapeHtml(session.note)}">${escapeHtml(truncate(session.note, 46))}</small>`
+            : "";
+
+        return `<tr>
+            <td>${session.date ?? "—"}${legacyBadge}</td>
+            <td class="map-name-cell">
+                <strong>${escapeHtml(map?.name ?? session.mapId)}</strong>
+                ${note}
+            </td>
+            <td>${money(session.maps)}</td>
+            <td>${map?.portalEligible ? money(session.portals) : "—"}</td>
+            <td>${map?.portalEligible ? money(session.clears) : "—"}</td>
+            <td>${money(session.earnedGil)}</td>
+            <td>${money(session.spentGil)}</td>
+            <td class="${profitClass}">${money(profit)}</td>
+            <td>
+                <div class="table-actions">
+                    <button type="button" class="mini-btn" data-action="edit" data-id="${session.id}">
+                        ${t(currentLang(), "edit")}
+                    </button>
+                    <button type="button" class="mini-btn delete" data-action="delete" data-id="${session.id}">
+                        ${t(currentLang(), "delete")}
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join("");
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function truncate(value, length) {
+    const text = String(value ?? "");
+    return text.length > length ? `${text.slice(0, length - 1)}…` : text;
+}
+
+// ============================================================================
+// Statistics rendering
+// ============================================================================
+function statsSessions() {
+    return filterSessions(appData.sessions, {
+        period: elements.statsPeriod.value,
+        level: elements.statsLevel.value
     });
 }
 
-function initCharts() {
-    const barCanvas = document.getElementById("charts");
-    if (barCanvas && typeof Chart !== "undefined") {
-        barChart = new Chart(barCanvas.getContext("2d"), {
-            type: "bar",
-            data: { labels: [], datasets: [] },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: "#dce4ef" } } },
-                scales: {
-                    x: { ticks: { color: "#9ba7b7" }, grid: { color: "rgba(255,255,255,0.05)" } },
-                    y: { beginAtZero: true, ticks: { color: "#9ba7b7" }, grid: { color: "rgba(255,255,255,0.05)" } }
-                }
-            }
+function renderStatistics() {
+    const sessions = statsSessions();
+    const totals = calculateTotals(sessions);
+    $("#stats-portal-rate").textContent = formatPercent(totals.portalRate, locale());
+    $("#stats-clear-rate").textContent = formatPercent(totals.clearRate, locale());
+    $("#stats-avg-profit").textContent = money(Math.round(totals.avgProfitPerMap));
+    $("#stats-profit").textContent = money(totals.profitGil);
+    renderStatisticsCharts(sessions);
+}
+
+function renderAll() {
+    renderSummary();
+    renderMapTable();
+    renderHistory();
+    if (location.hash === "#statistics") renderStatistics();
+}
+
+// ============================================================================
+// Navigation, language and compact mode
+// ============================================================================
+function viewMeta(view) {
+    const lang = currentLang();
+    const meta = {
+        PL: {
+            tracker: ["DZIENNIK TREASURE MAP", "Tracker"],
+            statistics: ["ANALIZA DANYCH", "Statystyki"],
+            guide: ["JAK KORZYSTAĆ", "Poradnik"],
+            about: ["PROJEKT", "O aplikacji"]
+        },
+        ENG: {
+            tracker: ["TREASURE JOURNAL", "Tracker"],
+            statistics: ["DATA ANALYTICS", "Statistics"],
+            guide: ["HOW TO USE", "Guide"],
+            about: ["PROJECT", "About"]
+        },
+        FR: {
+            tracker: ["JOURNAL DE CARTES", "Suivi"],
+            statistics: ["ANALYSE DES DONNÉES", "Statistiques"],
+            guide: ["MODE D'EMPLOI", "Guide"],
+            about: ["PROJET", "À propos"]
+        }
+    };
+    return meta[lang]?.[view] ?? meta.ENG[view];
+}
+
+function showView(view) {
+    const valid = ["tracker", "statistics", "guide", "about"].includes(view) ? view : "tracker";
+    $$('[data-view-panel]').forEach(panel => {
+        const active = panel.dataset.viewPanel === valid;
+        panel.hidden = !active;
+        panel.classList.toggle("active", active);
+    });
+    $$(".nav-link").forEach(link => link.classList.toggle("active", link.dataset.view === valid));
+    const [eyebrow, title] = viewMeta(valid);
+    $("#view-eyebrow").textContent = eyebrow;
+    $("#view-title").textContent = title;
+    closeMobileMenu();
+    if (valid === "statistics") {
+        requestAnimationFrame(() => {
+            renderStatistics();
+            resizeStatisticsCharts();
         });
     }
 }
 
-function updateCharts() {
-    if (!barChart) return;
-    const labels = [];
-    const gilData = [];
-
-    MAPS_DATABASE.forEach(m => {
-        const entry = mapData[m.id];
-        if (entry && entry.earned_gil > 0) {
-            labels.push(m.name);
-            gilData.push(entry.earned_gil);
-        }
-    });
-
-    barChart.data.labels = labels;
-    barChart.data.datasets = [{
-        label: "Gil per Map Type",
-        data: gilData,
-        backgroundColor: "rgba(216, 155, 72, 0.75)",
-        borderColor: "rgba(216, 155, 72, 1)",
-        borderWidth: 1
-    }];
-    barChart.update();
+function applyLanguage(lang) {
+    appData = setSettings(appData, { language: lang });
+    elements.language.value = lang;
+    applyTranslations(lang);
+    populateLevelFilter();
+    updateMapFormState();
+    elements.saveSessionBtn.textContent = editingSessionId
+        ? t(lang, "saveChanges")
+        : t(lang, "addSession");
+    renderAll();
+    showView((location.hash || "#tracker").slice(1));
 }
 
-function updateSummary() {
-    const totals = calculateTotals(mapData);
-
-    elements.totalMaps.textContent = `${totals.totalMaps} (Portal: ${totals.portalRate}%)`;
-    elements.totalPortals.textContent = totals.totalPortals;
-    elements.totalClears.textContent = `${totals.totalClears} (Clear: ${totals.clearRate}%)`;
-    elements.totalGil.textContent = `${totals.totalGil.toLocaleString()} Gil`;
-
-    saveState(mapData);
-    updateCharts();
-    updateTable();
-}
-
-function getFilteredAndSortedMaps() {
-    let list = [...MAPS_DATABASE];
-
-    if (currentFilter === "PARTY") list = list.filter(m => m.type === "Party");
-    if (currentFilter === "SOLO") list = list.filter(m => m.type === "Solo");
-
-    list.sort((a, b) => {
-        let valA = a[sortKey];
-        let valB = b[sortKey];
-
-        if (sortKey === "earned_gil" || sortKey === "num_maps" || sortKey === "num_portals") {
-            valA = mapData[a.id][sortKey] || 0;
-            valB = mapData[b.id][sortKey] || 0;
-        }
-
-        if (valA < valB) return sortAsc ? -1 : 1;
-        if (valA > valB) return sortAsc ? 1 : -1;
-        return 0;
-    });
-
-    return list;
-}
-
-function updateTable() {
-    elements.tableBody.innerHTML = "";
-    const filteredMaps = getFilteredAndSortedMaps();
-
-    filteredMaps.forEach(m => {
-        const entry = mapData[m.id] || { num_maps: 0, num_portals: 0, num_clears: 0, earned_gil: 0 };
-        const avgGil = calculateAvgGil(entry.earned_gil, entry.num_maps);
-
-        const row = elements.tableBody.insertRow();
-        row.innerHTML = `
-            <td><strong>${m.name}</strong></td>
-            <td>${m.type}</td>
-            <td>${m.level}</td>
-            <td>${entry.num_maps}</td>
-            <td>${m.type === "Party" ? entry.num_portals : "-"}</td>
-            <td>${m.type === "Party" ? entry.num_clears : "-"}</td>
-            <td>${entry.earned_gil.toLocaleString()} Gil</td>
-            <td>${avgGil.toLocaleString()} Gil</td>
-            <td>
-                <button class="quick-add" data-id="${m.id}" data-type="map">+1 Map</button>
-                ${m.type === "Party" ? `<button class="quick-add" data-id="${m.id}" data-type="portal">+1 Portal</button>` : ""}
-                ${m.type === "Party" ? `<button class="quick-add" data-id="${m.id}" data-type="clear">+1 Clear</button>` : ""}
-            </td>
-        `;
-    });
-
-    document.querySelectorAll(".quick-add").forEach(btn => {
-        btn.onclick = (e) => {
-            const id = e.target.getAttribute("data-id");
-            const type = e.target.getAttribute("data-type");
-            if (type === "map") mapData[id].num_maps += 1;
-            if (type === "portal") mapData[id].num_portals += 1;
-            if (type === "clear") mapData[id].num_clears += 1;
-            updateSummary();
-        };
-    });
-}
-
-function changeLanguage(lang) {
-    const t = translations[lang];
-    if (!t) return;
-    currentLang = lang;
-
-    document.getElementById("header-eyebrow").textContent = t.eyebrowHeader;
-    document.getElementById("main-title").textContent = t.title;
-    document.querySelector(".header-description").textContent = t.description;
-
-    document.getElementById("summary-maps-label").textContent = t.totalMaps;
-    document.getElementById("summary-portals-label").textContent = t.totalPortals;
-    document.getElementById("summary-clears-label").textContent = t.totalClears;
-    document.getElementById("summary-gil-label").textContent = t.totalGil;
-
-    document.querySelector('label[for="language"]').textContent = t.language;
-    document.querySelector('label[for="calendar"]').textContent = t.date;
-    document.querySelector('label[for="map-select"]').textContent = t.mapLabel;
-    document.querySelector('label[for="num-maps"]').textContent = t.numMaps;
-    document.querySelector('label[for="num-portals"]').textContent = t.numPortals;
-    document.querySelector('label[for="num-clears"]').textContent = t.numClears;
-    document.querySelector('label[for="earned-gil"]').textContent = t.earnedGil;
-
-    document.getElementById("add-data").textContent = t.addDataBtn;
-    document.getElementById("edit-data").textContent = t.editDataBtn;
-    document.getElementById("delete-data").textContent = t.deleteDataBtn;
-    document.getElementById("reset-all").textContent = t.resetAllBtn;
-
-    document.getElementById("chart-eyebrow").textContent = t.eyebrowStats;
-    document.getElementById("chart-title").textContent = t.chartTitle;
-    document.getElementById("table-eyebrow").textContent = t.eyebrowData;
-    document.getElementById("table-title").textContent = t.tableTitle;
-
-    document.getElementById("th-name").textContent = t.thName;
-    document.getElementById("th-type").textContent = t.thType;
-    document.getElementById("th-level").textContent = t.thLevel;
-    document.getElementById("th-maps").textContent = t.thMaps;
-    document.getElementById("th-portals").textContent = t.thPortals;
-    document.getElementById("th-clears").textContent = t.thClears;
-    document.getElementById("th-gil").textContent = t.thGil;
-    document.getElementById("th-avggil").textContent = t.thAvgGil;
-    document.getElementById("th-quick").textContent = t.thQuick;
-
-    updateCharts();
-}
-
-function exportCSV() {
-    const exportData = MAPS_DATABASE.map(m => ({
-        ID: m.id,
-        Name: m.name,
-        Level: m.level,
-        Type: m.type,
-        Maps: mapData[m.id].num_maps,
-        Portals: mapData[m.id].num_portals,
-        Clears: mapData[m.id].num_clears,
-        EarnedGil: mapData[m.id].earned_gil
-    }));
-
-    const csv = Papa.unparse(exportData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `FFXIV_Map_Tracker_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-function exportExcel() {
-    const exportData = MAPS_DATABASE.map(m => ({
-        "Mapa": m.name,
-        "Poziom": m.level,
-        "Typ": m.type,
-        "Użyte Mapy": mapData[m.id].num_maps,
-        "Portale": mapData[m.id].num_portals,
-        "Ukończone Lochy": mapData[m.id].num_clears,
-        "Zysk (Gil)": mapData[m.id].earned_gil
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Map Tracker");
-    XLSX.writeFile(workbook, `FFXIV_Map_Tracker_${new Date().toISOString().split('T')[0]}.xlsx`);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    populateMapDropdown();
-    initCharts();
-    updateSummary();
-
-    elements.language.onchange = e => changeLanguage(e.target.value);
-
-    // Przełącznik trybu Overlay
-    const toggleBtn = document.getElementById("toggle-overlay-btn");
-    if (localStorage.getItem("overlay_mode") === "true") {
-        document.body.classList.add("overlay-mode");
-        if (toggleBtn) toggleBtn.textContent = "🔍 Pełny widok";
+function setCompactMode(enabled) {
+    document.body.classList.toggle("overlay-mode", enabled);
+    elements.compactExit.hidden = !enabled;
+    appData = setSettings(appData, { compactMode: enabled });
+    if (enabled && location.hash !== "#tracker") {
+        location.hash = "#tracker";
     }
+}
 
-    if (toggleBtn) {
-        toggleBtn.onclick = () => {
-            const isOverlay = document.body.classList.toggle("overlay-mode");
-            localStorage.setItem("overlay_mode", isOverlay);
-            toggleBtn.textContent = isOverlay ? "🔍 Pełny widok" : "📐 Tryb Overlay";
-            updateTable();
-        };
+function openMobileMenu() {
+    elements.sidebar.classList.add("open");
+    elements.mobileBackdrop.hidden = false;
+}
+
+function closeMobileMenu() {
+    elements.sidebar.classList.remove("open");
+    elements.mobileBackdrop.hidden = true;
+}
+
+// ============================================================================
+// Export helper
+// ============================================================================
+async function runExport(button, action, successMessage) {
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = "…";
+    try {
+        await action();
+        showToast(successMessage);
+    } catch (error) {
+        console.error(error);
+        showToast(`Export error: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.textContent = original;
     }
+}
 
-    document.getElementById("add-data").onclick = () => {
-        const id = elements.mapSelect.value;
-        mapData[id].num_maps += parseInt(elements.numMaps.value, 10) || 0;
-        mapData[id].num_portals += parseInt(elements.numPortals.value, 10) || 0;
-        mapData[id].num_clears += parseInt(elements.numClears.value, 10) || 0;
-        mapData[id].earned_gil += parseInt(elements.earnedGil.value, 10) || 0;
+// ============================================================================
+// Event wiring
+// ============================================================================
+function wireEvents() {
+    window.addEventListener("hashchange", () => {
+        showView((location.hash || "#tracker").slice(1));
+    });
 
-        if (elements.calendar.value) {
-            saveSession(elements.calendar.value, mapData[id]);
+    elements.language.addEventListener("change", event => {
+        applyLanguage(event.target.value);
+    });
+
+    elements.mapSelect.addEventListener("change", updateMapFormState);
+    elements.mapTypeFilter.addEventListener("change", renderMapTable);
+    elements.statsPeriod.addEventListener("change", renderStatistics);
+    elements.statsLevel.addEventListener("change", renderStatistics);
+
+    elements.form.addEventListener("submit", event => {
+        event.preventDefault();
+        try {
+            setFormError();
+            const session = readForm();
+            const wasEditing = Boolean(editingSessionId);
+            if (editingSessionId) {
+                appData = updateSession(appData, editingSessionId, session);
+            } else {
+                appData = addSession(appData, session);
+            }
+            renderAll();
+            resetForm();
+            showToast(wasEditing ? "Session updated." : "Session saved.");
+        } catch (error) {
+            setFormError(error.message);
+        }
+    });
+
+    elements.cancelEditBtn.addEventListener("click", resetForm);
+
+    elements.historyBody.addEventListener("click", event => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) {
+            return;
         }
 
-        updateSummary();
-        elements.numMaps.value = 0;
-        elements.numPortals.value = 0;
-        elements.numClears.value = 0;
-        elements.earnedGil.value = 0;
-    };
+        const id = button.dataset.id;
 
-    document.getElementById("reset-all").onclick = () => {
-        if (confirm("Czy na pewno chcesz usunąć wszystkie dane?")) {
-            clearState();
-            mapData = buildDefaultMapData();
-            updateSummary();
+        if (button.dataset.action === "edit") {
+            startEdit(id);
         }
-    };
 
-    document.getElementById("save-csv").onclick = exportCSV;
-    document.getElementById("save-excel").onclick = exportExcel;
-});
+        if (button.dataset.action === "delete") {
+            if (!confirm("Delete this session?")) {
+                return;
+            }
+
+            appData = deleteSession(appData, id);
+
+            if (editingSessionId === id) {
+                resetForm();
+            }
+            renderAll();
+            showToast("Session deleted.");
+        }
+    });
+
+    $("#reset-all-btn").addEventListener("click", () => {
+        if (!confirm("This will permanently remove all locally stored tracker data. Continue?")) {
+            return;
+        }
+        clearAppData();
+        appData = createDefaultAppData();
+        persist();
+        applyLanguage(appData.settings.language);
+        resetForm();
+        renderAll();
+        showToast("All tracker data was reset.");
+    });
+
+    $("#toggle-overlay-btn").addEventListener("click", () => {
+        setCompactMode(!document.body.classList.contains("overlay-mode"));
+    });
+    elements.compactExit.addEventListener("click", () => setCompactMode(false));
+    $("#mobile-menu-btn").addEventListener("click", openMobileMenu);
+    elements.mobileBackdrop.addEventListener("click", closeMobileMenu);
+    $$(".nav-link").forEach(link => link.addEventListener("click", closeMobileMenu));
+
+    $("#export-csv-btn").addEventListener("click", event => {
+        runExport(
+            event.currentTarget,
+            () => exportCsv(appData.sessions),
+            t(currentLang(), "csvExported")
+        );
+    });
+
+    $("#export-json-btn").addEventListener("click", event => {
+        runExport(
+            event.currentTarget,
+            () => exportJson(appData),
+            t(currentLang(), "jsonBackupExported")
+        );
+    });
+
+    $("#export-ods-btn").addEventListener("click", event => {
+        runExport(
+            event.currentTarget,
+            () => exportOds(appData),
+            t(currentLang(), "odsExported")
+        );
+    });
+
+    $("#export-xlsx-btn").addEventListener("click", event => {
+        runExport(
+            event.currentTarget,
+            () => exportExcel(appData),
+            t(currentLang(), "xlsxExported")
+        );
+    });
+
+    $("#export-all-btn").addEventListener("click", event => {
+        runExport(
+            event.currentTarget,
+            () => exportDataPackage(appData),
+            t(currentLang(), "dataPackageExported")
+        );
+    });
+
+    $("#import-json-btn").addEventListener("click", () => $("#import-json-file").click());
+    $("#import-json-file").addEventListener("change", async event => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) {
+            return;
+        }
+        try {
+            const imported = await readJsonFile(file);
+            const sessionCount = imported.sessions?.length ?? 0;
+            const confirmed = confirm(
+                t(currentLang(), "restoreConfirm").replace("{count}", sessionCount)
+            );
+
+            if (!confirmed) {
+                return;
+            }
+            appData = replaceAppData(imported);
+            elements.language.value = appData.settings.language;
+            applyLanguage(appData.settings.language);
+            resetForm();
+            renderAll();
+            showToast(t(currentLang(), "backupRestored"));
+        } catch (error) {
+            console.error(error);
+            showToast(`Import error: ${error.message}`);
+        }
+    });
+}
+
+// ============================================================================
+// Application bootstrap
+// ============================================================================
+function init() {
+    populateMapSelect();
+    elements.language.value = appData.settings.language;
+    applyTranslations(appData.settings.language);
+    populateLevelFilter();
+    elements.calendar.value = today();
+    updateMapFormState();
+    document.body.classList.toggle("overlay-mode", Boolean(appData.settings.compactMode));
+    elements.compactExit.hidden = !appData.settings.compactMode;
+    wireEvents();
+    renderAll();
+    const initialView = (location.hash || "#tracker").slice(1);
+    showView(initialView);
+}
+
+init();
