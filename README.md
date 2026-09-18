@@ -1,13 +1,34 @@
+# FFXIV Map Tracker
+
+> **Track. Analyze. Profit.**
+
 <p align="center">
-  <img src="assets/MapTracker.jpeg" alt="FFXIV Map Tracker Banner" width="100%">
+  <a href="https://remitechdev.github.io/FF-XIV-Map-Tracker/">
+    <img src="assets/readme/ffxiv-map-tracker-banner.png" alt="FFXIV Map Tracker — Treasure Hunt statistics and analytics" width="100%">
+  </a>
 </p>
 
+A local-first web application for tracking **Final Fantasy XIV Treasure Map** sessions, treasure dungeon portals, dungeon clears, map purchase costs, and Gil profitability.
 
-**Current version:** `v0.4.0`
+**Current version:** `v0.4.0`a
 
-[🇵🇱 Polski](#-polski) · [🇬🇧 English](#-english) · [🇫🇷 Français](#-français)
+<a id="languages"></a>
+
+<p align="center">
+  <a href="#polski">
+    <img src="https://img.shields.io/badge/%F0%9F%87%B5%F0%9F%87%B1_Polski-D6A84B?style=for-the-badge" alt="Polski">
+  </a>
+  <a href="#english">
+    <img src="https://img.shields.io/badge/%F0%9F%87%AC%F0%9F%87%A7_English-D6A84B?style=for-the-badge" alt="English">
+  </a>
+  <a href="#francais">
+    <img src="https://img.shields.io/badge/%F0%9F%87%AB%F0%9F%87%B7_Fran%C3%A7ais-D6A84B?style=for-the-badge" alt="Français">
+  </a>
+</p>
 
 ---
+
+<a id="polski"></a>
 
 ## 🇵🇱 Polski
 
@@ -36,7 +57,7 @@ Aplikacja działa lokalnie w przeglądarce i nie wymaga konta ani zewnętrznej b
 
 ### Eksport i backup
 
-FF XIV Map Tracker obsługuje kilka formatów, ponieważ każdy z nich ma inne zastosowanie:
+FFXIV Map Tracker obsługuje kilka formatów, ponieważ każdy z nich ma inne zastosowanie:
 
 | Format | Zastosowanie |
 | --- | --- |
@@ -44,6 +65,7 @@ FF XIV Map Tracker obsługuje kilka formatów, ponieważ każdy z nich ma inne z
 | **ODS** | Skoroszyt przygotowany z myślą o LibreOffice Calc |
 | **CSV** | Surowe dane sesji do dalszej analizy |
 | **JSON** | Pełny backup danych użytkownika, który można ponownie zaimportować |
+| **ZIP** | Pakiet zawierający XLSX, ODS, CSV i JSON |
 
 Raport XLSX zawiera arkusze:
 
@@ -91,9 +113,11 @@ Nie zaleca się uruchamiania aplikacji bezpośrednio przez `file://`, ponieważ 
 ```text
 FF-XIV-Map-Tracker/
 ├── assets/
-│   └── icons/
-│       ├── icon-192.png
-│       └── icon-512.png
+│   ├── icons/
+│   │   ├── icon-192.png
+│   │   └── icon-512.png
+│   └── readme/
+│       └── ffxiv-map-tracker-banner.png
 ├── docs/
 │   ├── CHANGELOG.md
 │   ├── CODE-STYLE.md
@@ -153,10 +177,15 @@ FFXIV Map Tracker jest niezależnym, fanowskim projektem i nie jest powiązany z
 
 Projekt został stworzony przez **RemiTech** dla społeczności Final Fantasy XIV. Aplikacja jest udostępniana do bezpłatnego użytku społecznościowego. Komercyjna redystrybucja oraz przypisywanie sobie autorstwa projektu lub kodu nie są dozwolone.
 
+> Jeśli projekt ma być udostępniany jako open source na określonych warunkach, warto dodać osobny plik `LICENSE`, który formalnie opisze zasady korzystania z kodu.
+
+[↑ Wybierz język](#languages)
+
 ---
 
-<details>
-<summary><strong>🇬🇧 English</strong></summary>
+<a id="english"></a>
+
+## 🇬🇧 English
 
 ### About
 
@@ -189,6 +218,7 @@ The app is local-first and does not require an account or a dedicated server-sid
 | **ODS** | Workbook intended for LibreOffice Calc |
 | **CSV** | Raw session data for further analysis |
 | **JSON** | Complete restorable user-data backup |
+| **ZIP** | Bundle containing XLSX, ODS, CSV, and JSON |
 
 The XLSX report contains:
 
@@ -245,12 +275,13 @@ FFXIV Map Tracker is an independent fan-made project and is not affiliated with 
 
 The project was created by **RemiTech** for the Final Fantasy XIV community. It is provided for free community use. Commercial redistribution and claiming authorship of the project or its code are not permitted.
 
-</details>
+[↑ Choose language](#languages)
 
 ---
 
-<details>
-<summary><strong>🇫🇷 Français</strong></summary>
+<a id="francais"></a>
+
+## 🇫🇷 Français
 
 ### À propos
 
@@ -283,6 +314,7 @@ L'application fonctionne localement dans le navigateur et ne nécessite ni compt
 | **ODS** | Classeur destiné à LibreOffice Calc |
 | **CSV** | Données brutes des sessions |
 | **JSON** | Sauvegarde complète pouvant être restaurée |
+| **ZIP** | Archive contenant XLSX, ODS, CSV et JSON |
 
 Le rapport XLSX contient :
 
@@ -334,7 +366,7 @@ FFXIV Map Tracker est un projet indépendant créé par un fan et n'est ni affil
 
 Le projet a été créé par **RemiTech** pour la communauté Final Fantasy XIV. Il est mis gratuitement à disposition de la communauté. La redistribution commerciale et l'appropriation de la paternité du projet ou du code ne sont pas autorisées.
 
-</details>
+[↑ Choisir la langue](#languages)
 
 ---
 
