@@ -153,8 +153,6 @@ FFXIV Map Tracker jest niezależnym, fanowskim projektem i nie jest powiązany z
 
 Projekt został stworzony przez **RemiTech** dla społeczności Final Fantasy XIV. Aplikacja jest udostępniana do bezpłatnego użytku społecznościowego. Komercyjna redystrybucja oraz przypisywanie sobie autorstwa projektu lub kodu nie są dozwolone.
 
-> Jeśli projekt ma być udostępniany jako open source na określonych warunkach, warto dodać osobny plik `LICENSE`, który formalnie opisze zasady korzystania z kodu.
-
 ---
 
 <details>
