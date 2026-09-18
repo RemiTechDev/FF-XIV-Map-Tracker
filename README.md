@@ -36,7 +36,7 @@ Aplikacja działa lokalnie w przeglądarce i nie wymaga konta ani zewnętrznej b
 
 ### Eksport i backup
 
-FFXIV Map Tracker obsługuje kilka formatów, ponieważ każdy z nich ma inne zastosowanie:
+FF XIV Map Tracker obsługuje kilka formatów, ponieważ każdy z nich ma inne zastosowanie:
 
 | Format | Zastosowanie |
 | --- | --- |
@@ -44,7 +44,6 @@ FFXIV Map Tracker obsługuje kilka formatów, ponieważ każdy z nich ma inne za
 | **ODS** | Skoroszyt przygotowany z myślą o LibreOffice Calc |
 | **CSV** | Surowe dane sesji do dalszej analizy |
 | **JSON** | Pełny backup danych użytkownika, który można ponownie zaimportować |
-| **ZIP** | Pakiet zawierający XLSX, ODS, CSV i JSON |
 
 Raport XLSX zawiera arkusze:
 
@@ -192,7 +191,6 @@ The app is local-first and does not require an account or a dedicated server-sid
 | **ODS** | Workbook intended for LibreOffice Calc |
 | **CSV** | Raw session data for further analysis |
 | **JSON** | Complete restorable user-data backup |
-| **ZIP** | Bundle containing XLSX, ODS, CSV, and JSON |
 
 The XLSX report contains:
 
@@ -287,7 +285,6 @@ L'application fonctionne localement dans le navigateur et ne nécessite ni compt
 | **ODS** | Classeur destiné à LibreOffice Calc |
 | **CSV** | Données brutes des sessions |
 | **JSON** | Sauvegarde complète pouvant être restaurée |
-| **ZIP** | Archive contenant XLSX, ODS, CSV et JSON |
 
 Le rapport XLSX contient :
 
